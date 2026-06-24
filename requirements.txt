@@ -1,4 +1,7 @@
 streamlit
+google-genai
+groq 
+streamlit
 google-generativeai
 groq
 streamlit-mic-recorder
