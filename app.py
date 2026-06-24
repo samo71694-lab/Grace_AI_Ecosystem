@@ -9,25 +9,22 @@ from groq import Groq
 # ------------------------------------------------------------------
 st.set_page_config(page_title="Grace Study Centre - AI Ecosystem", page_icon="🏫", layout="wide")
 
-# Yahan humne aapki screenshot wali Gemini Key pehle se hi set kar di hai!
-PRIMARY_KEY = "AQ.Ab8RN6KlJlnnY00LlkGukk-Nu6jylXth_aAqZQnJguuobtJPBg"  # Aapki key yahan lag gayi hai
+PRIMARY_KEY = "AIzaSyBnY00L1kGukk-Nu6jy1Xth_aAqZQnJguuobtJPBg"
 genai.configure(api_key=PRIMARY_KEY)
 
-# Groq API Key (Render environment variables se automatic uthane ke liye)
 groq_key = os.environ.get("GROQ_API_KEY", "")
 if groq_key:
     groq_client = Groq(api_key=groq_key)
 else:
     groq_client = None
 
-# Advanced CSS for Side-by-Side Google Bar & Layout Styling
+# Advanced CSS Styling
 st.markdown("""
     <style>
     .main-title { font-size: 38px !important; font-weight: bold; color: #FF4B4B; text-align: center; }
     .subtitle { text-align: center; color: #555555; margin-bottom: 30px; }
     .card-box { padding: 15px; border-radius: 8px; background-color: #F3F4F6; border-left: 5px solid #1E3A8A; margin-bottom: 15px; }
     
-    /* Mobile aur Desktop dono par elements ko ek row mein rakhne ke liye */
     [data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
@@ -111,7 +108,6 @@ def ask_llama(prompt):
 # ------------------------------------------------------------------
 # 4. Main Multi-Agent Navigation Tabs
 # ------------------------------------------------------------------
-# Yahan hum dono agents ke liye tabs bana rahe hain
 tab1, tab2 = st.tabs(["🎙️ Student Personal Tutor", "📊 Intelligent Tracker & Planner"])
 
 # ==================================================================
@@ -137,7 +133,6 @@ with tab1:
     if "speech_text" not in st.session_state:
         st.session_state.speech_text = ""
 
-    # Google Bar Row Layout
     col1, col2 = st.columns([0.80, 0.20])
 
     with col1:
@@ -191,6 +186,7 @@ with tab2:
         
         if search_roll in students_db:
             s_data = students_db[search_roll]
+            
             st.markdown(f"""
             <div class="card-box">
                 <b>👤 Name:</b> {s_data['name']}<br>
@@ -198,7 +194,8 @@ with tab2:
                 <b>📈 Current Attendance:</b> {s_data['attendance']}%<br>
                 <b>🎯 Mock Test Marks:</b> {s_data['marks']}/100
             </div>
-            """, unsafe_allowed_html=True)
+            """, unsafe_allow_html=True)
+            
             st.warning(f"**⚠️ Focus Areas (Weak Points):**\n{s_data['weak_points']}")
         else:
             st.error("❌ Yeh Roll Number database mein nahi mila! Kripya 101, 102 ya 103 check karein.")
@@ -217,7 +214,6 @@ with tab2:
                     f"Weak Points: {s_data['weak_points']}"
                 )
                 
-                # PHASE 1: DEEPSEEK ANALYSIS
                 with st.spinner("🧠 1. DeepSeek-R1 data ka conceptual analysis aur reason dhoondh raha hai..."):
                     ds_prompt = f"Analyze this student data and pinpoint exactly where they need core conceptual help: {info_context}"
                     analysis_result = ask_deepseek(ds_prompt)
@@ -228,7 +224,6 @@ with tab2:
                     
                 st.markdown("---")
                 
-                # PHASE 2: META LLAMA PLANNER
                 with st.spinner("📅 2. Meta Llama 3.3 agle din ka customized timetable taiyar kar raha hai..."):
                     llama_prompt = (
                         f"Create a strict, encouraging next-day study plan and hour-by-hour timetable in simple Hinglish based on this analysis: {analysis_result}. "
