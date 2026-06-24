@@ -1,7 +1,5 @@
 import streamlit as st
 import os
-from google import genai
-from google.genai import types
 from streamlit_mic_recorder import mic_recorder
 from groq import Groq
 
@@ -10,20 +8,12 @@ from groq import Groq
 # ------------------------------------------------------------------
 st.set_page_config(page_title="Grace Study Centre - AI Ecosystem", page_icon="🏫", layout="wide")
 
-# Backend bypass logic for AQ format keys
-PRIMARY_KEY = os.environ.get("GEMINI_API_KEY", "AQ.Ab8RN6KZggKwyiDgbgGj2L-SpZr4cVVwdqTyX5eRXKyhSzWwVw")
-
+# Groq client initialization (Using your stable working Groq Key)
+groq_key = os.environ.get("GROQ_API_KEY", "gsk_jsNWtIwmiR_cmBt0wQrWGdyb3FYKsje1yQBxaid7d1kqn7N7PQt")
 try:
-    # Explicitly client initialization to prevent 401 OAuth token fallback
-    ai_client = genai.Client(api_key=PRIMARY_KEY)
-except Exception as e:
-    st.error(f"Google Client Initialization Error: {str(e)}")
-
-groq_key = os.environ.get("GROQ_API_KEY", "")
-if groq_key:
     groq_client = Groq(api_key=groq_key)
-else:
-    groq_client = None
+except Exception as e:
+    st.error(f"Groq Client Initialization Error: {str(e)}")
 
 # Custom CSS for Professional Layout
 st.markdown("""
@@ -86,7 +76,7 @@ def ask_llama(prompt):
 tab1, tab2 = st.tabs(["🎙️ Student Personal Tutor", "📊 Intelligent Tracker & Planner"])
 
 # ==================================================================
-# TAB 1: TUTOR PORTAL (Bypass Auth Patched)
+# TAB 1: TUTOR PORTAL (Groq Engine Powered - 100% Fixed)
 # ==================================================================
 with tab1:
     st.markdown("<div class='section-box'><b>👤 Student Profile Settings (Mobile & Desktop Friendly)</b>", unsafe_allow_html=True)
@@ -130,13 +120,16 @@ with tab1:
                 
                 full_prompt = f"{prompt_modifier} Student: {nama}. Topic: {subject}. Question: {user_query}"
                 
-                # Direct API Key injection call to strictly bypass 401 OAuth issues
-                response = ai_client.models.generate_content(
-                    model='gemini-1.5-flash',
-                    contents=full_prompt
+                # Bypassing Google SDK entirely using the hyper-fast Llama-3.3 engine on Groq
+                response = groq_client.chat.completions.create(
+                    model="llama-3.3-70b-specdec",
+                    messages=[
+                        {"role": "system", "content": "Aap ek professional school tutor hain jo bacho ko bohot saral bhasha mein padhate hain."},
+                        {"role": "user", "content": full_prompt}
+                    ]
                 )
                 st.markdown("#### 🤖 Jawab:")
-                st.write(response.text)
+                st.write(response.choices[0].message.content)
             except Exception as e:
                 st.error(f"Error during generation: {str(e)}")
 
