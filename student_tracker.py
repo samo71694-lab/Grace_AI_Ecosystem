@@ -171,4 +171,3 @@ with tab2:
                     
                 st.markdown("### 🎯 Teacher Ke Liye AI Guidance (Kal Kya Kaam Dena Hai):")
                 st.info(teacher_action_plan)
-             
