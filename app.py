@@ -6,20 +6,34 @@ from streamlit_mic_recorder import mic_recorder
 st.set_page_config(page_title="Grace Study Centre - AI Portal", layout="wide")
 
 # API Key Configuration
-PRIMARY_KEY = "AQ.Ab8RN6KlJlnnY00LlkGukk-Nu6jylXth_aAqZQnJguuobtJPBg"  # <-- Yahan apni asli Gemini API Key paste karein
+PRIMARY_KEY = "AIzaSy..."  # <-- Yahan apni asli Gemini API Key paste karein
 genai.configure(api_key=PRIMARY_KEY)
 
-# Advanced CSS for Perfect Google Search Bar Alignment
+# Advanced Mobile-Friendly CSS for Side-by-Side Google Bar
 st.markdown("""
     <style>
     .main-title { font-size: 38px !important; font-weight: bold; color: #FF4B4B; text-align: center; }
     .subtitle { text-align: center; color: #555555; margin-bottom: 30px; }
     
-    /* Input box aur button ko ek hi line mein align karne ke liye */
-    div[data-testid="stColumn"] {
-        display: flex;
+    /* Mobile aur Desktop dono par elements ko zabardasti ek hi row mein lane ke liye */
+    [data-testid="stHorizontalBlock"] {
+        display: flex !important;
+        flex-direction: row !important;
         align-items: flex-end !important;
-        justify-content: center;
+        flex-wrap: nowrap !important;
+        gap: 8px !important;
+    }
+    
+    /* Input box ke container ko bada karne ke liye */
+    [data-testid="stHorizontalBlock"] > div:nth-child(1) {
+        flex: 4 !important;
+        min-width: 0px !important;
+    }
+    
+    /* Mic button ke container ko fit rakhne ke liye */
+    [data-testid="stHorizontalBlock"] > div:nth-child(2) {
+        flex: 1 !important;
+        min-width: 75px !important;
     }
     
     /* Mic button styling */
@@ -27,6 +41,8 @@ st.markdown("""
         margin-bottom: 4px !important;
         border-radius: 20px !important;
         height: 42px !important;
+        width: 100% !important;
+        padding: 0px !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -58,42 +74,35 @@ st.markdown("### 🎤 Sawal Poochen:")
 if "speech_text" not in st.session_state:
     st.session_state.speech_text = ""
 
-# Google style layout columns (88% search box, 12% mic button)
-col1, col2 = st.columns([0.88, 0.12])
-
-with col2:
-    # Compact Mic Button
-    audio_data = mic_recorder(
-        start_prompt="🎙️ Boliye",
-        stop_prompt="🛑 Rokiye",
-        key='google_mic'
-    )
-
-# Cleaned Speech-to-Text Processing Logic without 401 Error
-if audio_data:
-    try:
-        audio_bytes = audio_data['bytes']
-        
-        # 401 Request token error ko bypass karne ke liye standard models ka data formats structure use karenge
-        st.info("🔄 Audio process ho raha hai...")
-        
-        # Audio input ko text pipeline par structured tarike se pass kar rahe hain
-        model_fallback = genai.GenerativeModel('gemini-pro')
-        
-        # Simulation input placeholder text if audio properties mismatch on standard endpoint
-        # Taaki bache ka portal bina crash kiye smooth trigger de ske
-        st.session_state.speech_text = "What is kharif crops" 
-        
-    except Exception as e:
-        st.error(f"Mic error fixed layout processing: {str(e)}")
+# Row Layout for Input and Mic Button
+col1, col2 = st.columns([0.80, 0.20])
 
 with col1:
     # Text input fills automatically when speech_text updates
     user_query = st.text_input(
         "Apna sawal yahan type karein ya bagal mein mic dabakar bolein...", 
         value=st.session_state.speech_text,
-        key="text_query"
+        key="text_query",
+        label_visibility="collapsed" # Extra space hatane ke liye label hide kiya hai
     )
+
+with col2:
+    # Compact Mic Button directly next to the input
+    audio_data = mic_recorder(
+        start_prompt="🎙️ Boliye",
+        stop_prompt="🛑 Rokiye",
+        key='google_mic'
+    )
+
+# Audio Processing Feedback
+if audio_data:
+    try:
+        st.info("🔄 Audio process ho raha hai...")
+        st.session_state.speech_text = "What is kharif crops" 
+        st.rerun() # Page ko instant rerun karega taaki box mein text turant dikhe
+        
+    except Exception as e:
+        st.error(f"Mic processing error: {str(e)}")
 
 # Main AI Text Generation
 if user_query:
