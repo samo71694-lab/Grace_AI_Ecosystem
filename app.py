@@ -1,24 +1,30 @@
 import streamlit as st
 import google.generativeai as genai
 from streamlit_mic_recorder import mic_recorder
-import os
 
 # Page Configuration
 st.set_page_config(page_title="Grace Study Centre - AI Portal", layout="wide")
 
 # API Key Configuration
-PRIMARY_KEY = "AQ.Ab8RN6KlJlnnY00LlkGukk-Nu6jylXth_aAqZQnJguuobtJPBg"  # <-- Yahan apni asli Gemini API Key paste karein
+PRIMARY_KEY = "AQ.Ab8RN6KlJlnnY00LlkGukk-Nu6jylXth_aAqZQnJguuobtJPBg"  # <-- Yahan apni asli Gemini API Key paste kar dena
 genai.configure(api_key=PRIMARY_KEY)
 
-# Custom CSS for Google-like Input Layout
+# Advanced CSS for Exact Google Search Bar Alignment
 st.markdown("""
     <style>
     .main-title { font-size: 38px !important; font-weight: bold; color: #FF4B4B; text-align: center; }
     .subtitle { text-align: center; color: #555555; margin-bottom: 30px; }
+    
     div[data-testid="stColumn"] {
         display: flex;
-        align-items: center;
+        align-items: flex-end !important;
         justify-content: center;
+    }
+    
+    div.stButton > button {
+        margin-bottom: 4px !important;
+        border-radius: 20px !important;
+        height: 42px !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -46,42 +52,45 @@ mode = st.radio("Option Select Karein:",
 st.markdown("---")
 st.markdown("### 🎤 Sawal Poochen:")
 
-# Initialize session state to hold transcribed text
+# Initialize session state for input tracking
 if "speech_text" not in st.session_state:
     st.session_state.speech_text = ""
 
-# --- GOOGLE STYLE SIDE-BY-SIDE LAYOUT ---
-# Creating columns: 85% width for input box, 15% for the microphone button
-col1, col2 = st.columns([0.85, 0.15])
+# Google style layout columns
+col1, col2 = st.columns([0.88, 0.12])
 
 with col2:
-    # Google style compact mic recorder
     audio_data = mic_recorder(
         start_prompt="🎙️ Boliye",
         stop_prompt="🛑 Rokiye",
         key='google_mic'
     )
 
-# Process speech to text if audio is recorded
+# Real Speech-to-Text Processing Logic
 if audio_data:
-    # In full implementation, bytes are converted to text using an audio-to-text pipeline
-    # For now, we simulate the text confirmation or you can route it through a whisper/gemini model
-    st.session_state.speech_text = "What is kharif crops" # Live integration text fill placeholder
+    try:
+        audio_bytes = audio_data['bytes']
+        audio_parts = [{"mime_type": "audio/wav", "data": audio_bytes}]
+        
+        st.info("🔄 Aawaz ko text mein badla ja raha hai...")
+        stt_model = genai.GenerativeModel('gemini-1.5-flash')
+        stt_response = stt_model.generate_content([
+            "Aapka kaam is audio ko sunkar ise text mein badalna (transcribe) hai. Sirf wahi likhein jo bola gaya hai, koi extra gyaan mat dein.", 
+            audio_parts[0]
+        ])
+        st.session_state.speech_text = stt_response.text.strip()
+        
+    except Exception as e:
+        st.error(f"Mic processing error: {str(e)}")
 
 with col1:
-    # The text input box will automatically populate with speech text if available
     user_query = st.text_input(
         "Apna sawal yahan type karein ya bagal mein mic dabakar bolein...", 
         value=st.session_state.speech_text,
         key="text_query"
     )
 
-# Audio feedback display below the input row if recorded
-if audio_data:
-    st.audio(audio_data['bytes'], format='audio/wav')
-    st.success(f"✍️ Auto-Typed from Voice: '{st.session_state.speech_text}'")
-
-# Final execution logic
+# Main AI Text Generation
 if user_query:
     with st.spinner("🧠 AI soch raha hai aur jawab tayaar kar raha hai..."):
         try:
@@ -97,8 +106,6 @@ if user_query:
             response = model.generate_content(full_prompt)
             st.markdown(f"#### 🤖 Jawab ({mode}):")
             st.write(response.text)
-            
-            # Reset the session state after processing so it doesn't get stuck
             st.session_state.speech_text = ""
             
         except Exception as e:
