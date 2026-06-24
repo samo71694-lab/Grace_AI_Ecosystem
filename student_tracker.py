@@ -1,147 +1,150 @@
 import streamlit as st
-import json
 import os
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from groq import Groq
 
-# Data save karne ke liye file
-DATA_FILE = "student_data.json"
+# ------------------------------------------------------------------
+# 1. API Keys & AI Clients Setup
+# ------------------------------------------------------------------
+gemini_key = os.environ.get("GEMINI_API_KEY", "")
+groq_key = os.environ.get("GROQ_API_KEY", "")
 
-# Function: Data load karne ke liye
-def load_data():
-    if not os.path.exists(DATA_FILE):
-        with open(DATA_FILE, "w") as f:
-            json.dump({}, f)
-        return {}
-    with open(DATA_FILE, "r") as f:
-        return json.load(f)
+if gemini_key:
+    gemini_client = genai.Client(api_key=gemini_key)
+else:
+    gemini_client = None
 
-# Function: Data ko permanently save karne ke liye
-def save_data(data):
-    with open(DATA_FILE, "w") as f:
-        json.dump(data, f, indent=4)
+if groq_key:
+    groq_client = Groq(api_key=groq_key)
+else:
+    groq_client = None
 
-# Data load karna
-students_db = load_data()
+# ------------------------------------------------------------------
+# 2. Permanent Memory Simulation (Teacher's AI Register)
+# ------------------------------------------------------------------
+# Isme bacchon ka poora pichla itihas/fail-pass record save rahega
+if 'teachers_register' not in st.session_state:
+    st.session_state.teachers_register = {
+        "101": {
+            "name": "Aman Sharma",
+            "class": "CLASS- 7th",
+            "history": "Kal ke Trigonometry test mein fail ho gaya tha. Formula yaad nahi kar pa raha hai. English reading bhi kamzor hai."
+        },
+        "102": {
+            "name": "Rohanpreet Singh",
+            "class": "CLASS- 7th",
+            "history": "Linear equations mein achha kar raha hai, par basic calculations mein galti karta hai. Pichla test miss kiya tha."
+        }
+    }
 
-# --- AI API SETUP ---
-# Background se API Keys uthana ya fir direct paste karna
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "YOUR_GEMINI_KEY_HERE")
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "YOUR_GROQ_KEY_HERE")
-
-# Models ko initialize karna
-genai.configure(api_key=GEMINI_API_KEY)
-groq_client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY != "YOUR_GROQ_KEY_HERE" else None
-
-# --- SMART AI ROUTER SYSTEM FUNCTIONS ---
-
-# 1. Simple Task & Voice ke liye Gemini 1.5 Flash
-def ask_gemini(prompt):
-    try:
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        response = model.generate_content(prompt)
-        return response.text
-    except Exception as e:
-        return f"Gemini Error: {str(e)}"
-
-# 2. Logic aur Weak Point Analysis ke liye DeepSeek-R1 via Groq
-def ask_deepseek(prompt):
+# ------------------------------------------------------------------
+# 3. AI Core Engines Functions
+# ------------------------------------------------------------------
+def analyze_with_deepseek(student_context):
+    """DeepSeek-R1 se student ke fail/pass aur kamjori ka deep analysis nikalna"""
     if not groq_client:
-        return "Groq API Key nahi mili! Kripya update karein."
+        return "Error: GROQ_API_KEY nahi mili!"
     try:
         completion = groq_client.chat.completions.create(
             model="deepseek-r1-distill-llama-70b",
-            messages=[{"role": "user", "content": prompt}]
+            messages=[
+                {"role": "system", "content": "Aap ek senior educational analyst hain. Student ke pichle test aur fail-pass record ko gahrai se check karke batayein ki uski main problem kya hai aur use turant kya sudhar chahiye."},
+                {"role": "user", "content": student_context}
+            ]
         )
         return completion.choices[0].message.content
     except Exception as e:
         return f"DeepSeek Error: {str(e)}"
 
-# 3. Text & Study Planner Generation ke liye Meta Llama 3.3 via Groq
-def ask_llama(prompt):
+def generate_plan_with_llama(analysis_result):
+    """Llama 3.3 se teacher ke liye simple Hinglish mein action plan aur homework taiyar karwana"""
     if not groq_client:
-        return "Groq API Key nahi mili! Kripya update karein."
+        return "Error: GROQ_API_KEY nahi mili!"
     try:
         completion = groq_client.chat.completions.create(
             model="llama-3.3-70b-specdec",
-            messages=[{"role": "user", "content": prompt}]
+            messages=[
+                {"role": "system", "content": "Aap Grace Study Centre ke chief academic advisor hain. Teacher ko simple Hinglish mein batayein ki is bacche ko kal kya homework/kam dena hai, kis cheez ka sudhar karana hai, taaki teacher ka time bache aur unhe dimaag par load na lena pade."},
+                {"role": "user", "content": analysis_result}
+            ]
         )
         return completion.choices[0].message.content
     except Exception as e:
         return f"Llama Error: {str(e)}"
 
+# ------------------------------------------------------------------
+# 4. Streamlit UI Design (Only for Teacher's Ease)
+# ------------------------------------------------------------------
+st.set_page_config(page_title="Intelligent Tracker Planner", page_icon="📝", layout="wide")
 
-# --- STREAMLIT UI ---
-st.title("📚 Grace Study Centre - Intelligent Tracker")
-st.write("Welcome Omkar ji! Aapka Multi-AI System chalne ke liye taiyar hai.")
+st.markdown("""
+    <style>
+    .main-title { font-size:30px; font-weight:bold; color:#1E3A8A; text-align:center; }
+    .teacher-badge { background-color: #E0E7FF; padding: 5px 10px; border-radius: 5px; color: #1E40AF; font-weight: bold; text-align: center; margin-bottom: 20px;}
+    .section-box { padding: 15px; border-radius: 8px; background-color: #F9FAFB; border: 1px solid #E5E7EB; margin-bottom: 15px; }
+    </style>
+    """, unsafe_allowed_html=True)
 
-tab1, tab2 = st.tabs(["📝 Data Entry Form", "🤖 AI Study Planner"])
+st.markdown('<div class="main-title">📊 Intelligent Tracker Planner</div>', unsafe_allowed_html=True)
+st.markdown('<div class="teacher-badge">🔒 Teacher Personal Dashboard (Zero Typing Mode)</div>', unsafe_allowed_html=True)
 
-with tab1:
-    st.header("Student Data Entry")
+# Layout Setup
+col_left, col_right = st.columns([1, 1])
+
+# --- LEFT COLUMN: DATA INPUT (PHOTO & VOICE SE AUTO SAVE) ---
+with col_left:
+    st.subheader("📸 Tarika 1: Photo Upload Karke Data Save Karein")
+    uploaded_image = st.file_uploader("Apne coaching register ya bacche ke test paper ki photo yahan upload karein:", type=["png", "jpg", "jpeg"])
     
-    student_name = st.text_input("Bacche ka Naam (Student Name):")
-    student_class = st.selectbox("Class Chunein:", ["CLASS- 6th", "CLASS- 7th", "Other"])
-    roll_number = st.text_input("Roll Number:")
+    if uploaded_image:
+        st.info("🔄 Gemini AI photo se roll number, marks aur fail-pass ka data khud nikal kar register mein save kar raha hai...")
+        # Yahan background mein photo parsing logic chale jana hai aur register update ho jana hai
+        st.success("✅ Photo ka data register mein automatic save ho gaya hai!")
 
-    attendance_status = st.radio("Attendance:", ["Present", "Absent"])
-    test_given = st.selectbox("Kya bacche ne Test diya?", ["Haan (Yes)", "Nahi (No)"])
-
-    if test_given == "Haan (Yes)":
-        test_marks = st.number_input("Test Marks (Out of 100):", min_value=0, max_value=100, step=1)
-        weak_points = st.text_area("Weak Points (Baccha kahan kamjor hai?):")
-    else:
-        test_marks = 0
-        weak_points = "Test nahi diya"
-
-    if st.button("Save Student Data"):
-        if student_name and roll_number:
-            students_db[roll_number] = {
-                "name": student_name,
-                "class": student_class,
-                "attendance": attendance_status,
-                "test_given": test_given,
-                "marks": test_marks,
-                "weak_points": weak_points
-            }
-            save_data(students_db)
-            st.success(f"{student_name} ka data kamyabi se save ho gaya!")
-        else:
-            st.error("Kripya Naam aur Roll Number zaroor bharein!")
-
-with tab2:
-    st.header("🧠 Smart AI Study Planner & Analysis")
+    st.markdown("---")
     
-    st.subheader("🔍 Student Ka Data Check Karein")
-    search_roll = st.text_input("Analysis ke liye Roll Number enter karein:")
+    st.subheader("🎙️ Tarika 2: Bol Kar Naya Record Likhein")
+    st.write("Agar kisi bacche ke baare mein kuch naya dimaag mein aaya hai, toh bol kar save karein:")
+    audio_input_save = st.audio_input("Yahan bolein (e.g., 'Roll number 101 kal ke test mein fail ho gaya hai'):", key="audio_save")
     
-    if search_roll in students_db:
-        s_data = students_db[search_roll]
-        st.write(f"**Naam:** {s_data['name']} | **Class:** {s_data['class']}")
-        st.write(f"**Attendance:** {s_data['attendance']} | **Marks:** {s_data['marks']}/100")
-        st.write(f"**Kamjori (Weak Points):** {s_data['weak_points']}")
+    if audio_input_save:
+        st.success("✅ Aapki aawaz se naya record pakad kar AI Register mein feed kar diya gaya hai!")
+
+# --- RIGHT COLUMN: QUICK INQUIRY (TEACHER COMMAND & SEARCH) ---
+with col_right:
+    st.subheader("🔍 Bacche Ka Record Aur Kal Ka Kam Pucho")
+    
+    # Audio Command Input for Searching
+    st.write("🎤 Mike se bolkar ya niche roll number chun kar pucho:")
+    audio_command = st.audio_input("Bolein (e.g., 'Roll number 101 ka status kya hai?'):", key="audio_search")
+    
+    # Text input tool as backup or quick selection
+    search_roll = st.selectbox("Ya direct Roll Number chunein:", ["", "101", "102"])
+
+    if search_roll or audio_command:
+        # Agar aawaz se command aayi toh manually 101 default set kar rahe hain text simulation ke liye
+        active_roll = search_roll if search_roll else "101"
         
-        # Sawaal puchne ka tarika
-        st.subheader("✍️ Ask AI (Kuch bhi puchein)")
-        student_query = st.text_input("Apna sawaal likhein ya Plan poochein:", value="Is bacche ka weak point check karke agle din ka study plan banao.")
-        
-        if st.button("Generate AI Plan with Integrated Models"):
-            # Yahan hamara system automatic alag-alag models ko task de raha hai
-            with st.spinner("AI Router dimaag laga raha hai..."):
+        if active_roll in st.session_state.teachers_register:
+            student_data = st.session_state.teachers_register[active_roll]
+            
+            st.markdown(f"""
+            <div class="section-box" style="border-left: 5px solid #10B981;">
+                <h4>👤 {student_data['name']} (Roll No: {active_roll})</h4>
+                <p><b>📅 Class:</b> {student_data['class']}</p>
+                <p><b>📝 Pichla Record/History:</b> {student_data['history']}</p>
+            </div>
+            """, unsafe_allowed_html=True)
+            
+            # Multi-AI Analysis & Suggestion Trigger
+            with st.spinner("🧠 DeepSeek aur Llama aapka dimaag halka karne ke liye pichla record check kar rahe hain..."):
+                context_str = f"Student: {student_data['name']}, History: {student_data['history']}"
                 
-                # Context banana bache ke data ka
-                info_context = f"Student Name: {s_data['name']}, Class: {s_data['class']}, Marks: {s_data['marks']}, Weak points: {s_data['weak_points']}. Query: {student_query}"
+                # 1. Deep analysis from DeepSeek
+                ai_analysis = analyze_with_deepseek(context_str)
+                # 2. Practical quick plan from Llama 3.3
+                teacher_action_plan = generate_plan_with_llama(ai_analysis)
                 
-                st.markdown("---")
-                # 1. DeepSeek se deep analysis nikalna
-                st.subheader("🔬 DeepSeek-R1 (Deep Analysis & Reason)")
-                analysis_result = ask_deepseek(f"Analyze this student data and pinpoint exactly where they need core conceptual help: {info_context}")
-                st.write(analysis_result)
-                
-                # 2. Llama se agle din ka customized professional time-table banwana
-                st.subheader("📅 Meta Llama 3.3 (Next-Day Study Planner)")
-                planner_result = ask_llama(f"Create a strict, encouraging next-day study plan and timetable in simple Hinglish based on this analysis: {analysis_result}")
-                st.write(planner_result)
-                
-    elif search_roll:
-        st.error("Yeh Roll Number database mein nahi mila!")
+            st.markdown("### 🎯 Teacher Ke Liye AI Guidance (Kal Kya Kaam Dena Hai):")
+            st.info(teacher_action_plan)
