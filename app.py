@@ -64,7 +64,7 @@ def ask_llama(prompt):
     if not groq_client: return "⚠️ GROQ_API_KEY environment variable mein nahi mili."
     try:
         completion = groq_client.chat.completions.create(
-            model="llama-3.3-70b-specdec",
+            model="llama-3.3-70b-versatile",
             messages=[{"role": "system", "content": "Aap Grace Study Centre ke senior coordinator hain. Hinglish mein customized hour-by-hour timetable banayein."}, {"role": "user", "content": prompt}]
         )
         return completion.choices[0].message.content
@@ -76,7 +76,7 @@ def ask_llama(prompt):
 tab1, tab2 = st.tabs(["🎙️ Student Personal Tutor", "📊 Intelligent Tracker & Planner"])
 
 # ==================================================================
-# TAB 1: TUTOR PORTAL (Groq Engine Powered - 100% Fixed)
+# TAB 1: TUTOR PORTAL (Groq Stable Engine Powered)
 # ==================================================================
 with tab1:
     st.markdown("<div class='section-box'><b>👤 Student Profile Settings (Mobile & Desktop Friendly)</b>", unsafe_allow_html=True)
@@ -120,9 +120,9 @@ with tab1:
                 
                 full_prompt = f"{prompt_modifier} Student: {nama}. Topic: {subject}. Question: {user_query}"
                 
-                # Bypassing Google SDK entirely using the hyper-fast Llama-3.3 engine on Groq
+                # Using the fresh and active Llama-3.3-70b-versatile model
                 response = groq_client.chat.completions.create(
-                    model="llama-3.3-70b-specdec",
+                    model="llama-3.3-70b-versatile",
                     messages=[
                         {"role": "system", "content": "Aap ek professional school tutor hain jo bacho ko bohot saral bhasha mein padhate hain."},
                         {"role": "user", "content": full_prompt}
