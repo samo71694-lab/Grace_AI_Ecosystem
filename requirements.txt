@@ -1,4 +1,4 @@
-streamlit>=1.35.0
-streamlit-mic-recorder>=0.0.26
+streamlit
+streamlit-mic-recorder
 google-genai
 groq
