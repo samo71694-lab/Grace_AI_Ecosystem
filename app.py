@@ -9,8 +9,8 @@ from groq import Groq
 # ------------------------------------------------------------------
 st.set_page_config(page_title="Grace Study Centre - AI Ecosystem", page_icon="🏫", layout="wide")
 
-# API Configurations
-PRIMARY_KEY = "AIzaSyBnY00L1kGukk-Nu6jy1Xth_aAqZQnJguuobtJPBg"
+# Aapki asli 'AQ...' wali API Key maine yahan bina kisi galti ke fix kar di hai
+PRIMARY_KEY = "AQ.Ab8RN6KZggKwyiDgbgGj2L-SpZr4cVVwdqTyX5eRXKyhSzWwVw"
 genai.configure(api_key=PRIMARY_KEY)
 
 groq_key = os.environ.get("GROQ_API_KEY", "")
@@ -63,7 +63,7 @@ def ask_deepseek(prompt):
             messages=[{"role": "system", "content": "Aap ek expert educational psychologist aur data analyst hain. Data ka sateek analysis dein."}, {"role": "user", "content": prompt}]
         )
         return completion.choices[0].message.content
-    except Exception as e: return f"DeepSeek Engine Error: {str(e)}"
+    except Exception as e: return f"DeepSeek Error: {str(e)}"
 
 def ask_llama(prompt):
     if not groq_client: return "⚠️ GROQ_API_KEY environment variable mein nahi mili."
@@ -73,7 +73,7 @@ def ask_llama(prompt):
             messages=[{"role": "system", "content": "Aap Grace Study Centre ke senior coordinator hain. Hinglish mein customized hour-by-hour timetable banayein."}, {"role": "user", "content": prompt}]
         )
         return completion.choices[0].message.content
-    except Exception as e: return f"Llama Engine Error: {str(e)}"
+    except Exception as e: return f"Llama Error: {str(e)}"
 
 # ------------------------------------------------------------------
 # 4. Main Tabs Navigation
@@ -81,7 +81,7 @@ def ask_llama(prompt):
 tab1, tab2 = st.tabs(["🎙️ Student Personal Tutor", "📊 Intelligent Tracker & Planner"])
 
 # ==================================================================
-# TAB 1: TUTOR PORTAL (Ab Mobile par 100% dikhega)
+# TAB 1: TUTOR PORTAL (Mobile aur Laptop dono ke liye fixed upar)
 # ==================================================================
 with tab1:
     st.markdown("<div class='section-box'><b>👤 Student Profile Settings (Mobile & Desktop Friendly)</b>", unsafe_allow_html=True)
@@ -119,8 +119,9 @@ with tab1:
     if user_query:
         with st.spinner("🧠 AI Jawab tayaar kar raha hai..."):
             try:
-                model = genai.GenerativeModel('gemini-1.5-flash') # Naya stable fast model
-                prompt_modifier = f"Aap ek friendly school teacher hain. {class_level} ke student ke mutabik {lang} bhasha mein samjhayein."
+                # Latest and updated Gemini model endpoint
+                model = genai.GenerativeModel('gemini-1.5-flash')
+                prompt_modifier = f"Aap ek friendly school teacher hain. {class_level} ke student ke dimaag ke mutabik {lang} bhasha mein samjhayein."
                 if "Gana / Kavita" in mode:
                     prompt_modifier += " Jawab ek bacho jaisi rhyming kavita ke roop mein hona chahiye."
                 
