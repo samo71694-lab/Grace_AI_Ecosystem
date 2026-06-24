@@ -1,6 +1,6 @@
 import streamlit as st
 import os
-import google.generativeai as genai
+from google import genai
 from streamlit_mic_recorder import mic_recorder
 from groq import Groq
 
@@ -9,9 +9,12 @@ from groq import Groq
 # ------------------------------------------------------------------
 st.set_page_config(page_title="Grace Study Centre - AI Ecosystem", page_icon="🏫", layout="wide")
 
-# Aapki asli 'AQ...' wali API Key maine yahan bina kisi galti ke fix kar di hai
+# Naye GenAI Client SDK ke mutabik API configuration
 PRIMARY_KEY = "AQ.Ab8RN6KZggKwyiDgbgGj2L-SpZr4cVVwdqTyX5eRXKyhSzWwVw"
-genai.configure(api_key=PRIMARY_KEY)
+try:
+    ai_client = genai.Client(api_key=PRIMARY_KEY)
+except Exception as e:
+    st.error(f"Google Client Initialization Error: {str(e)}")
 
 groq_key = os.environ.get("GROQ_API_KEY", "")
 if groq_key:
@@ -19,7 +22,7 @@ if groq_key:
 else:
     groq_client = None
 
-# Custom CSS for Professional Layout (No Sidebar Dependence)
+# Custom CSS for Professional Layout
 st.markdown("""
     <style>
     .main-title { font-size: 32px !important; font-weight: bold; color: #1E3A8A; text-align: center; margin-bottom: 5px; }
@@ -27,7 +30,6 @@ st.markdown("""
     .section-box { padding: 20px; border-radius: 10px; background-color: #F9FAFB; border: 1px solid #E5E7EB; margin-bottom: 20px; }
     .card-box { padding: 15px; border-radius: 8px; background-color: #F3F4F6; border-left: 5px solid #1E3A8A; margin-bottom: 15px; }
     
-    /* Responsive input rows */
     [data-testid="stHorizontalBlock"] {
         align-items: center !important;
         gap: 10px !important;
@@ -81,7 +83,7 @@ def ask_llama(prompt):
 tab1, tab2 = st.tabs(["🎙️ Student Personal Tutor", "📊 Intelligent Tracker & Planner"])
 
 # ==================================================================
-# TAB 1: TUTOR PORTAL (Mobile aur Laptop dono ke liye fixed upar)
+# TAB 1: TUTOR PORTAL (Naye SDK Ke Sath Fixed)
 # ==================================================================
 with tab1:
     st.markdown("<div class='section-box'><b>👤 Student Profile Settings (Mobile & Desktop Friendly)</b>", unsafe_allow_html=True)
@@ -119,13 +121,17 @@ with tab1:
     if user_query:
         with st.spinner("🧠 AI Jawab tayaar kar raha hai..."):
             try:
-                # Latest and updated Gemini model endpoint
-                model = genai.GenerativeModel('gemini-1.5-flash')
                 prompt_modifier = f"Aap ek friendly school teacher hain. {class_level} ke student ke dimaag ke mutabik {lang} bhasha mein samjhayein."
                 if "Gana / Kavita" in mode:
                     prompt_modifier += " Jawab ek bacho jaisi rhyming kavita ke roop mein hona chahiye."
                 
-                response = model.generate_content(f"{prompt_modifier} Student: {nama}. Topic: {subject}. Question: {user_query}")
+                full_prompt = f"{prompt_modifier} Student: {nama}. Topic: {subject}. Question: {user_query}"
+                
+                # Naye official SDK format mein content generation
+                response = ai_client.models.generate_content(
+                    model='gemini-1.5-flash',
+                    contents=full_prompt,
+                )
                 st.markdown("#### 🤖 Jawab:")
                 st.write(response.text)
             except Exception as e:
@@ -139,7 +145,7 @@ with tab2:
     t_col1, t_col2 = st.columns([1, 2])
 
     with t_col1:
-        search_roll = st.text_input("Enter Student Roll Number (101, 102, 103):", value="101").strip()
+        search_roll = st.text_input("Enter Student Roll Number (101, 102, 103):", value="101", key="tab2_search").strip()
         if search_roll in students_db:
             s_data = students_db[search_roll]
             st.markdown(f"""
@@ -157,11 +163,11 @@ with tab2:
     with t_col2:
         if search_roll in students_db:
             s_data = students_db[search_roll]
-            if st.button("Generate Personalized AI Action Plan", type="primary"):
+            if st.button("Generate Personalized AI Action Plan", type="primary", key="tab2_btn"):
                 info_context = f"Student: {s_data['name']}, Weak Points: {s_data['weak_points']}"
                 with st.spinner("DeepSeek Analysis..."):
                     analysis = ask_deepseek(f"Analyze: {info_context}")
-                st.success("✅ DeepSeek Analysis Completed")
+                st.success("Base 1: DeepSeek Analysis Completed")
                 st.write(analysis)
                 
                 with st.spinner("Llama Planning..."):
