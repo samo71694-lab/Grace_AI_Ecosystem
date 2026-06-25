@@ -7,10 +7,10 @@ from streamlit_mic_recorder import mic_recorder
 from groq import Groq
 from gtts import gTTS
 
-# 1. Page Configuration
+# १. पेज का कॉन्फ़िगरेशन (मोबाइल और कंप्यूटर दोनों के लिए)
 st.set_page_config(page_title="Grace Study Centre - AI Ecosystem", page_icon="🏫", layout="wide")
 
-# API Keys Extraction
+# रेंडर एनवायरनमेंट से एपीआई की (API Keys) निकालना
 groq_key = os.environ.get("GROQ_API_KEY", "gsk_jsNWtIwmiR_cmBt0wQrWGdyb3FYKsje1yQBxaid7d1kqn7N7PQt")
 cartesia_key = os.environ.get("CARTESIA_API_KEY", "") 
 
@@ -19,7 +19,7 @@ try:
 except Exception as e:
     st.error(f"Groq Initialization Error: {str(e)}")
 
-# Custom CSS
+# ऐप को सुंदर बनाने के लिए सीएसएस (CSS)
 st.markdown("""
     <style>
     .main-title { font-size: 32px !important; font-weight: bold; color: #1E3A8A; text-align: center; margin-bottom: 5px; }
@@ -31,15 +31,15 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown("<div class='main-title'>🏫 Grace Study Centre</div>", unsafe_allow_html=True)
-st.markdown("<div class='subtitle'>Advanced Hybrid Voice Protocol (Language Sync Fixed)</div>", unsafe_allow_html=True)
+st.markdown("<div class='subtitle'>Advanced Hybrid Voice Protocol (100% Shuddh Hindi Version)</div>", unsafe_allow_html=True)
 
-# FINAL AUDIO TEXT CLEANER ENGINE
+# फालतू अंग्रेजी के शब्दों को हटाने के लिए क्लीनर इंजन
 def final_clean_engine(text):
     if not text:
         return ""
     clean = text.lower()
     
-    # Absolute list of unwanted chords and symbols
+    # हटाने वाले शब्दों की सूची
     garbage_words = [
         "a flat", "e flat", "b flat", "g flat", "a-flat", "e-flat", 
         "1.", "2.", "3.", "4.", "5.", "to omkar", "omkar beta",
@@ -55,35 +55,15 @@ def final_clean_engine(text):
     clean = " ".join(clean.split())
     return clean.strip()
 
-# Local Database Simulation
+# डेटाबेस सिमुलेशन (छात्रों का रिकॉर्ड)
 students_db = {
-    "101": {"name": "Aman Sharma", "class": "CLASS- 7th", "attendance": 85, "marks": 72, "weak_points": "Trigonometry ratios mein galti karta hai."},
-    "102": {"name": "Rohanpreet Singh", "class": "CLASS- 7th", "attendance": 92, "marks": 45, "weak_points": "Algebra ke linear equations mein dikkat hoti hai."},
-    "103": {"name": "Simran Kaur", "class": "CLASS- 7th", "attendance": 65, "marks": 88, "weak_points": "Conceptual classes miss ho gayi hain."}
+    "101": {"name": "Aman Sharma", "class": "CLASS- 7th", "weak_points": "Trigonometry ratios mein confusion hai."}
 }
-
-def ask_deepseek(prompt):
-    try:
-        completion = groq_client.chat.completions.create(
-            model="deepseek-r1-distill-llama-70b",
-            messages=[{"role": "user", "content": prompt}]
-        )
-        return completion.choices[0].message.content
-    except: return "DeepSeek Processing completed."
-
-def ask_llama(prompt):
-    try:
-        completion = groq_client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[{"role": "user", "content": prompt}]
-        )
-        return completion.choices[0].message.content
-    except: return "Llama Processing completed."
 
 tab1, tab2 = st.tabs(["🎙️ Student Personal Tutor", "📊 Intelligent Tracker & Planner"])
 
 with tab1:
-    st.markdown("<div class='section-box'><b>👤 Student Profile Settings</b>", unsafe_allow_html=True)
+    st.markdown("<div class='section-box'><b>👤 Student Profile Settings (छात्र प्रोफाइल सेटिंग)</b>", unsafe_allow_html=True)
     p_col1, p_col2, p_col3, p_col4 = st.columns([1, 1, 1, 1])
     with p_col1: nama = st.text_input("Aapka Naam?", value="Omkar")
     with p_col2: class_level = st.selectbox("Class Level:", ["6th", "7th", "8th", "9th", "10th"], index=2)
@@ -91,10 +71,10 @@ with tab1:
     with p_col4: lang = st.selectbox("Response Bhasha:", ["Standard Hindi (हिंदी)", "Punjabi (ਪੰਜਾਬੀ)", "English"])
     st.markdown("</div>", unsafe_allow_html=True)
 
-    mode = st.radio("Option:", ["📝 Sirf Text", "🗣️ Bolne wala Teacher Mode (Emotional)", "🎵 Gana / Kavita Mode (Emotional)"], horizontal=True)
+    mode = st.radio("Option (विकल्प):", ["📝 Sirf Text", "🗣️ Bolne wala Teacher Mode (Emotional)", "🎵 Gana / Kavita Mode (Emotional)"], horizontal=True)
 
     st.markdown("---")
-    st.markdown("### 🎤 Sawal Poochen:")
+    st.markdown("### 🎤 Sawal Poochen (सवाल पूछें):")
 
     if "speech_text" not in st.session_state: st.session_state.speech_text = ""
 
@@ -109,80 +89,80 @@ with tab1:
                 transcription = groq_client.audio.transcriptions.create(file=file_placeholder, model="whisper-large-v3-turbo")
                 st.session_state.speech_text = transcription.text
                 st.rerun()
-            except Exception as e: st.error(f"Mic Error: {str(e)}")
+            except Exception as e: 
+                st.warning("⚠️ Browser Mic access issue. Alternately, you can type below directly.")
 
     if user_query:
-        # Dynamic Script Enforcement based on selection
+        # भाषा और लिपि का सख्त नियम
         script_instruction = ""
         tts_lang = 'hi'
-        
         if "हिंदी" in lang:
-            script_instruction = "STRICTLY write the text in Devanagari Hindi script (हिंदी भाषा और देवनागरी लिपि). Absolutely NO English alphabets, NO Hinglish, NO WhatsApp language allowed."
+            script_instruction = "STRICTLY respond in pure Devanagari Hindi Script (हिंदी अक्षर और देवनागरी लिपि). Absolutely NO English alphabets, NO Hinglish, NO WhatsApp language allowed. Use proper full stops (।) and commas (,) for voice pauses."
             tts_lang = 'hi'
-        elif "ਪੰਜਾਬੀ" in lang:
-            script_instruction = "STRICTLY write the text in Gurmukhi Punjabi script (ਪੰਜਾਬੀ ਭਾਸ਼ਾ). Absolutely NO English alphabets."
-            tts_lang = 'pa'
         else:
-            script_instruction = "Write the text strictly in standard professional English."
+            script_instruction = "Respond in standard clear English. Use commas and full stops accurately."
             tts_lang = 'en'
 
-        # SUPER STRICT PROMPT FOR LANGUAGE AND SYSTEM STYLE
         if "Gana" in mode:
-            prompt_modifier = f"Aap ek school teacher hain. {class_level} ke student {nama} ko samjhayein. {script_instruction} Aapka pura jawab STRICTLY bacchon jaisi mast rhyming kavita (poem) ke roop mein hona chahiye jisme geet jaisa swar ho. Bilkul seedha simple text ya paragraph mat likhna. Strictly no headings, no numbers, no musical scales like A flat, 1., or E flat."
+            prompt_modifier = f"Aap ek school teacher hain. {class_level} ke student {nama} ko samjhayein. {script_instruction} Your entire output response must strictly be a beautifully structured kid's rhyming poem (Kavita) with strict commas so it can be sung easily. Do not write essays or simple lines."
         else:
-            prompt_modifier = f"Aap ek friendly school teacher hain. {class_level} ke student {nama} ko samjhayein. {script_instruction} Clean paragraph format mein likhein. Strictly NO structural headers, NO bullets, NO numbers like 1, 2, 3 or musical scale notations."
+            prompt_modifier = f"Aap ek friendly school teacher hain. {class_level} ke student {nama} ko samjhayein. {script_instruction} Straight simple paragraphs without bullets or numbers."
             
         full_prompt = f"{prompt_modifier} Topic: {subject}. Question: {user_query}"
 
         text_container = st.empty()
         audio_container = st.empty()
         
-        # STEP 1: INSTANT FIRST LINE
+        # चरण १: तुरंत पहली लाइन बोलना (Instant First Line)
         try:
             instant_response = groq_client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=[
-                    {"role": "system", "content": f"Generate ONLY ONE short introductory line greeting the child warmly. You must respond strictly in the requested script language system: {script_instruction}. Max 12 words. Strictly NO numbering, NO musical chords like A flat or 1."},
+                    {"role": "system", "content": f"Generate ONLY ONE short introductory greeting sentence in this language script format: {script_instruction}. Maximum 10 words. Absolutely no English."},
                     {"role": "user", "content": full_prompt}
                 ]
             )
             first_line = instant_response.choices[0].message.content
             text_container.markdown(f"**Teacher:** {first_line}")
             
-            clean_first = final_clean_engine(first_line)
-            
             if "Sirf Text" not in mode:
-                tts = gTTS(text=clean_first if clean_first else "Aaiye isey samajhte hain.", lang=tts_lang, slow=False)
+                clean_first = final_clean_engine(first_line)
+                tts = gTTS(text=clean_first if clean_first else "आइए इसे समझते हैं।", lang=tts_lang, slow=False)
                 fp = io.BytesIO()
                 tts.write_to_fp(fp)
                 fp.seek(0)
                 audio_container.audio(fp, format="audio/mp3", autoplay=True)
         except: pass
 
-        # STEP 2: FULL DETAILED EXPLANATION (KAVITA OR PARAGRAPH)
-        with st.spinner("⏳ Handover Engine Active..."):
+        # चरण २: पूर्ण विवरण और सांस लेने का ठहराव (Full Detailed Explanation with Pauses)
+        with st.spinner("⏳ Handover Pipeline Active..."):
             try:
                 time.sleep(1.2)
                 full_response = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
                     messages=[
-                        {"role": "system", "content": f"Generate the full main explanation body text based on the style requested. You must output 100% in the chosen script language format: {script_instruction}. Strictly NO points, NO headers, NO symbols, NO music notes like A-flat, E-flat, or 1."},
+                        {"role": "system", "content": f"Provide the full response answer text based on style requested. Put distinct commas and full stops clearly to create artificial breath pauses. {script_instruction}. No English music nodes."},
                         {"role": "user", "content": full_prompt}
                     ]
                 )
                 detailed_text = full_response.choices[0].message.content
                 text_container.markdown(f"**Teacher:** {first_line}\n\n{detailed_text}")
                 
-                clean_detailed = final_clean_engine(detailed_text)
-                
                 if "Sirf Text" not in mode:
-                    tts_full = gTTS(text=clean_detailed, lang=tts_lang, slow=False)
-                    fp_full = io.BytesIO()
-                    tts_full.write_to_fp(fp_full)
-                    fp_full.seek(0)
-                    st.audio(fp_full, format="audio/mp3")
+                    clean_detailed = final_clean_engine(detailed_text)
+                    
+                    # पूर्ण विराम (।) और कॉमा के आधार पर वाक्यों को अलग करके ठहराव देना
+                    sentences = clean_detailed.replace("।", ".").split(".")
+                    for idx, sentence in enumerate(sentences):
+                        if len(sentence.strip()) > 2:
+                            tts_segment = gTTS(text=sentence.strip(), lang=tts_lang, slow=False)
+                            fp_segment = io.BytesIO()
+                            tts_segment.write_to_fp(fp_segment)
+                            fp_segment.seek(0)
+                            st.audio(fp_segment, format="audio/mp3")
+                            # प्राकृतिक सांस लेने के लिए ०.६ सेकंड का ठहराव (Pause)
+                            time.sleep(0.6)
             except Exception as e: st.error(f"Handover Error: {str(e)}")
 
 with tab2:
     st.markdown("### 📊 Student Progress Tracker Dashboard Active")
-    search_roll = st.text_input("Enter Student Roll Number:", value="101")
