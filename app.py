@@ -8,7 +8,7 @@ from groq import Groq
 from gtts import gTTS
 
 # ------------------------------------------------------------------
-# 1. Page Configuration (Mobile & Desktop Responsive)
+# 1. Page Configuration & Layout
 # ------------------------------------------------------------------
 st.set_page_config(page_title="Grace Study Centre - AI Ecosystem", page_icon="🏫", layout="wide")
 
@@ -38,7 +38,23 @@ st.markdown("<div class='main-title'>🏫 Grace Study Centre</div>", unsafe_allo
 st.markdown("<div class='subtitle'>Advanced Hybrid Voice Protocol (Gemini & Groq Fallback + GLM Handover)</div>", unsafe_allow_html=True)
 
 # ------------------------------------------------------------------
-# 2. Local Database Simulation (Tracker Portal)
+# 2. Advanced Text Cleaner (Removes Robotic Glitches and Formats)
+# ------------------------------------------------------------------
+def advanced_clean(text):
+    if not text:
+        return ""
+    # Remove markdown and brackets formatting
+    clean = text.replace("**", "").replace("*", "").replace('"', '').replace('“', '').replace('”', '')
+    # Remove robotic placeholders like '1.', '2.', 'A flat' found in logs
+    clean = clean.replace('1.', '').replace('2.', '').replace('3.', '')
+    clean = clean.replace('1', '').replace('2', '').replace('3', '')
+    clean = clean.replace('A flat', '').replace('E flat', '').replace('A-flat', '').replace('E-flat', '')
+    # Clean up double spacing
+    clean = clean.replace('  ', ' ')
+    return clean.strip()
+
+# ------------------------------------------------------------------
+# 3. Local Database Simulation (Tracker Portal)
 # ------------------------------------------------------------------
 students_db = {
     "101": {"name": "Aman Sharma", "class": "CLASS- 7th", "attendance": 85, "marks": 72, "weak_points": "Trigonometry formulas mein confusion hota hai, sin, cos, tan ke ratios mein galti karta hai. English reading slow hai."},
@@ -67,7 +83,7 @@ def ask_llama(prompt):
     except Exception as e: return f"Llama Error: {str(e)}"
 
 # ------------------------------------------------------------------
-# 3. Main Navigation
+# 4. Main Tab Navigation
 # ------------------------------------------------------------------
 tab1, tab2 = st.tabs(["🎙️ Student Personal Tutor", "📊 Intelligent Tracker & Planner"])
 
@@ -119,7 +135,7 @@ with tab1:
         text_container = st.empty()
         audio_container = st.empty()
         
-        # 🌟 STEP 1: DUAL-ENGINE INSTANT EMOTION VOICE (With Stable Free gTTS Fallback)
+        # 🌟 STEP 1: DUAL-ENGINE INSTANT EMOTION VOICE
         with st.spinner("⚡ Activating Instant Emotion Voice..."):
             audio_played = False
             first_line = f"Namaste {nama} beta! Wah, {subject} ka bohot hi pyaara sawal pucha hai aapne. Chaliye abhi minto mein samajhte hain!"
@@ -128,18 +144,18 @@ with tab1:
                 instant_response = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
                     messages=[
-                        {"role": "system", "content": "Generate ONLY ONE short introductory line acknowledging the student's question warmly. Max 15 words."},
+                        {"role": "system", "content": "Generate ONLY ONE warm, smiling friendly teacher opening line in the requested language acknowledging the student's question. Max 15 words. Do not number it."},
                         {"role": "user", "content": full_prompt}
                     ]
                 )
                 first_line = instant_response.choices[0].message.content
                 text_container.markdown(f"**Teacher:** {first_line}")
                 
-                # Absolute cleaning of text to remove formatting symbols
-                clean_first_line = first_line.replace("**", "").replace("*", "").replace('"', '').replace('“', '').replace('”', '')
+                # Apply advanced cleaning to first line
+                clean_first_line = advanced_clean(first_line)
                 
                 if "Sirf Text" not in mode:
-                    # If Cartesia Key is provided, use it. Otherwise, instantly fallback to free gTTS
+                    # Cartesia Option
                     if cartesia_key.strip():
                         headers = {
                             "X-API-Key": cartesia_key,
@@ -157,7 +173,7 @@ with tab1:
                             audio_container.audio(res.content, format="audio/wav", autoplay=True)
                             audio_played = True
                     
-                    # FREE Tier Automation Fallback (Guarantees Audio Output)
+                    # Stable Fallback to gTTS (Guarantees Voice)
                     if not audio_played:
                         tts_lang = 'en' if 'English' in lang else 'hi'
                         tts = gTTS(text=clean_first_line, lang=tts_lang, slow=False)
@@ -173,26 +189,25 @@ with tab1:
         # 🌟 STEP 2: SEAMLESS BACKEND HANDOVER TO FULL LONG RESPONSE
         with st.spinner("⏳ Handover to Full Server for Extended Explanation..."):
             try:
-                time.sleep(1.5) # Prevent overlapping
+                time.sleep(1.5) # Prevent overlapping audio triggers
                 
                 full_response = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
                     messages=[
-                        {"role": "system", "content": "Provide a detailed, complete, clear school-level explanation based on the prompt modifier. Do not repeat the introductory greeting line."},
+                        {"role": "system", "content": "Provide a detailed, complete, clear school-level explanation based on the prompt modifier. Do not repeat the introductory greeting line. Do not number points with 1, 2, 3 or symbols like A flat."},
                         {"role": "user", "content": full_prompt}
                     ]
                 )
                 detailed_text = full_response.choices[0].message.content
                 
-                # Append and print the complete final output chapter
+                # Append and print the complete final output text
                 text_container.markdown(f"**Teacher:** {first_line}\n\n{detailed_text}")
                 
-                # Filter symbols for second block audio streaming
-                clean_detailed = detailed_text.replace("**", "").replace("*", "").replace('"', '').replace('“', '').replace('”', '')
+                # Filter long output completely through advanced text cleaner
+                clean_detailed = advanced_clean(detailed_text)
                 
                 if "Sirf Text" not in mode:
-                    st.info("ℹ snuff text loaded. Free GLM pipeline active for remaining long audio stream.")
-                    # Temporary safe audio player for full text block
+                    st.info("ℹ️ Full text loaded into memory. Free GLM pipeline simulated for remaining block.")
                     tts_full = gTTS(text=clean_detailed, lang='hi' if 'Hindi' in lang else 'en', slow=False)
                     fp_full = io.BytesIO()
                     tts_full.write_to_fp(fp_full)
