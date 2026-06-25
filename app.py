@@ -31,33 +31,27 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown("<div class='main-title'>🏫 Grace Study Centre</div>", unsafe_allow_html=True)
-st.markdown("<div class='subtitle'>Advanced Hybrid Voice Protocol (Fix: Absolute Audio Cleaning Active)</div>", unsafe_allow_html=True)
+st.markdown("<div class='subtitle'>Advanced Hybrid Voice Protocol (100% Cleaned Code)</div>", unsafe_allow_html=True)
 
-# ------------------------------------------------------------------
-# 🔥 JAD SE KHATAM FILTER: JORDAAR TEXT CLEANER
-# ------------------------------------------------------------------
+# FINAL AUDIO TEXT CLEANER ENGINE
 def final_clean_engine(text):
     if not text:
         return ""
-    
-    # Lowercase mein badalna taaki CHOTE-BADE saare akshar catch ho sakein
     clean = text.lower()
     
-    # 1. Pichli dikkat wale saare music notes aur kachra shabdon ko gayab karna
+    # Absolute list of unwanted chords and symbols
     garbage_words = [
         "a flat", "e flat", "b flat", "g flat", "a-flat", "e-flat", 
         "1.", "2.", "3.", "4.", "5.", "to omkar", "omkar beta",
-        "omkar,", "omkar:", "uddharan chinh", "brackets", "bracket"
+        "omkar,", "omkar:", "uddharan chinh", "brackets", "bracket", "verse", "chorus"
     ]
     for word in garbage_words:
         clean = clean.replace(word, "")
         
-    # 2. Saare symbols aur numbers saaf karna
     clean = clean.replace("**", "").replace("*", "").replace('"', '').replace('“', '').replace('”', '')
     clean = clean.replace("1", "").replace("2", "").replace("3", "").replace("4", "").replace("5", "")
     clean = clean.replace("[", "").replace("]", "").replace("(", "").replace(")", "")
     
-    # Double spaces ko single space mein badalna
     clean = " ".join(clean.split())
     return clean.strip()
 
@@ -118,9 +112,12 @@ with tab1:
             except Exception as e: st.error(f"Mic Error: {str(e)}")
 
     if user_query:
-        # Strict Prompt Customization
-        prompt_modifier = f"Aap ek friendly school teacher hain. {class_level} ke student {nama} ko {lang} mein samjhayein. DO NOT include any structural headers, bullets, or musical scale references like A flat, 1., or E flat in your output text."
-        if "Gana" in mode: prompt_modifier += " Provide the response strictly as a rhythmic rhyme story for kids without using notes."
+        # SUPER STRICT PROMPT FOR POETRY / KAVITA MODE
+        if "Gana" in mode:
+            prompt_modifier = f"Aap ek school teacher hain. {class_level} ke student {nama} ko {lang} mein samjhayein. Aapka pura jawab STRICTLY bacchon jaisi mast rhyming kavita (poem) ke roop mein hona chahiye jisme geet jaisa swar ho. Bilkul seedha simple text ya paragraph mat likhna. Strictly no headings, no numbers, no musical scales like A flat, 1., or E flat."
+        else:
+            prompt_modifier = f"Aap ek friendly school teacher hain. {class_level} ke student {nama} ko {lang} mein samjhayein simple paragraphs mein. Strictly NO structural headers, NO bullets, NO numbers like 1, 2, 3 or musical scale notations like A flat, E flat."
+            
         full_prompt = f"{prompt_modifier} Topic: {subject}. Question: {user_query}"
 
         text_container = st.empty()
@@ -131,7 +128,7 @@ with tab1:
             instant_response = groq_client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=[
-                    {"role": "system", "content": "Generate ONLY ONE short conversational line greeting the child and validating the question warmly. Strictly NO numbering, NO markdown, NO music chords like A flat, 1., or E flat."},
+                    {"role": "system", "content": "Generate ONLY ONE short introductory line greeting the child warmly. Max 12 words. Strictly NO numbering, NO musical chords like A flat or 1."},
                     {"role": "user", "content": full_prompt}
                 ]
             )
@@ -148,25 +145,24 @@ with tab1:
                 audio_container.audio(fp, format="audio/mp3", autoplay=True)
         except: pass
 
-        # STEP 2: FULL DETAILED EXPLANATION 
+        # STEP 2: FULL DETAILED EXPLANATION (KAVITA OR PARAGRAPH)
         with st.spinner("⏳ Handover Engine Active..."):
             try:
                 time.sleep(1.2)
                 full_response = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
                     messages=[
-                        {"role": "system", "content": "Provide full detailed plain paragraph explanation. Strictly DO NOT use bullets, numbers, points, or musical scale notations like A-flat, E-flat, or 1."},
+                        {"role": "system", "content": "Generate the full main explanation body text based on the style requested. Strictly NO points, NO headers, NO symbols, NO music notes like A-flat, E-flat, or 1."},
                         {"role": "user", "content": full_prompt}
                     ]
                 )
                 detailed_text = full_response.choices[0].message.content
                 text_container.markdown(f"**Teacher:** {first_line}\n\n{detailed_text}")
                 
-                # Cleaning full output through final filter engine
                 clean_detailed = final_clean_engine(detailed_text)
                 
                 if "Sirf Text" not in mode:
-                    st.info("ℹ️ Streaming full audio block seamlessly.")
+                    # Blue st.info alert removed completely from here
                     tts_full = gTTS(text=clean_detailed, lang='hi' if 'Hindi' in lang else 'en', slow=False)
                     fp_full = io.BytesIO()
                     tts_full.write_to_fp(fp_full)
