@@ -30,7 +30,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown("<div class='main-title'>🏫 Grace Study Centre</div>", unsafe_allow_html=True)
-st.markdown("<div class='subtitle'>Advanced Hybrid Voice Protocol (100% Stable Audio Implementation)</div>", unsafe_allow_html=True)
+st.markdown("<div class='subtitle'>Advanced Hybrid Voice Protocol (100% Stable Version)</div>", unsafe_allow_html=True)
 
 # फाइनल ऑडियो टेक्स्ट क्लीनर इंजन
 def final_clean_engine(text):
@@ -49,7 +49,7 @@ def final_clean_engine(text):
     clean = clean.replace("[", "").replace("]", "").replace("(", "").replace(")", "")
     return clean.strip()
 
-# मेमोरी मैनेजमेंट के लिए सेशन स्टेट
+# मेमोरी मैनेजमेंट के लिए सेशन State
 if "speech_text" not in st.session_state:
     st.session_state.speech_text = ""
 
@@ -69,8 +69,8 @@ with tab1:
     st.markdown("---")
     st.markdown("### 🎤 Sawal Poochen (सवाल पूछें):")
 
-    # माइक इनपुट प्रोसेसिंग (बिना किसी रीलोड और रुकावट के)
-    audio_data = mic_recorder(start_prompt="🎙️ रिकॉर्ड करने के लिए यहाँ दबाएँ", stop_prompt="🛑 रोकने के लिए यहाँ दबाएँ", key='stable_mic_recorder')
+    # माइक इनपुट प्रोसेसिंग
+    audio_data = mic_recorder(start_prompt="🎙️ रिकॉर्ड करने के लिए यहाँ दबाएँ", stop_prompt="🛑 रोकने के लिए यहाँ दबाएँ", key='stable_mic_recorder_v4')
 
     if audio_data and audio_data.get("bytes"):
         try:
@@ -81,14 +81,14 @@ with tab1:
         except:
             pass
 
-    # इनपुट बॉक्स जहां माइक का बदला हुआ टेक्स्ट अपने आप आ जाएगा
+    # इनपुट बॉक्स
     user_query = st.text_input("आपका सवाल (माइक से रिकॉर्डेड या टाइप किया हुआ):", value=st.session_state.speech_text)
 
-    # 🔄 नया सबमिट बटन जो लूप की समस्या को पूरी तरह खत्म करेगा
+    # सबमिट बटन
     submit_button = st.button("जवाब जनरेट करें (Submit Question)", type="primary")
 
     if submit_button and user_query:
-        # भाषा और स्क्रिप्ट निर्धारण
+        # भाषा और स्क्रिप्ट निर्धारण का सख्त नियम
         script_instruction = ""
         tts_lang = 'hi'
         
@@ -98,4 +98,71 @@ with tab1:
         elif "ਪੰਜਾਬੀ" in lang:
             script_instruction = "You must output 100% in pure Gurmukhi Punjabi script (ਪੰਜਾਬੀ ਭਾਸ਼ਾ ਭਾਗ). Do NOT write in English or Hindi. Output purely using Punjabi symbols (ੳ ਅ ੲ ਸ ਹ)."
             tts_lang = 'pa'
-        else
+        else:
+            script_instruction = "Write the text strictly in standard plain school English text only."
+            tts_lang = 'en'
+
+        if "Gana" in mode:
+            prompt_modifier = f"Aap ek school teacher hain. {class_level} ke student {nama} ko samjhayein. {script_instruction} Your output response must be a beautifully structured kid's rhyming poem (Kavita structure) so it can be sung easily."
+        else:
+            prompt_modifier = f"Aap ek friendly school teacher hain. {class_level} ke student {nama} ko samjhayein. {script_instruction} Simple easy paragraphs without bullets or numbers."
+            
+        full_prompt = f"{prompt_modifier} Topic: {subject}. Question: {user_query}"
+
+        text_container = st.empty()
+        
+        # चरण १: तुरंत पहली लाइन बोलना (Greeting Line)
+        try:
+            instant_response = groq_client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[
+                    {"role": "system", "content": f"Generate ONLY ONE short introductory greeting line. You must strictly output 100% in the chosen language script rules: {script_instruction}. Maximum 8 words."},
+                    {"role": "user", "content": full_prompt}
+                ]
+            )
+            first_line = instant_response.choices[0].message.content
+            text_container.markdown(f"**Teacher:** {first_line}")
+            
+            if "Sirf Text" not in mode:
+                clean_first = final_clean_engine(first_line)
+                tts = gTTS(text=clean_first if clean_first else "आइए समझते हैं।", lang=tts_lang, slow=False)
+                fp = io.BytesIO()
+                tts.write_to_fp(fp)
+                fp.seek(0)
+                st.audio(fp, format="audio/mp3", autoplay=True)
+        except: 
+            pass
+
+        # चरण २: पूर्ण विवरण ऑडियो ठहराव के साथ
+        with st.spinner("⏳ उत्तर लोड हो रहा है..."):
+            try:
+                full_response = groq_client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=[
+                        {"role": "system", "content": f"Provide the full detailed answer text body based on style requested. Put clear commas and full stops to create speech rhythm. Follow script layout strictly: {script_instruction}."},
+                        {"role": "user", "content": full_prompt}
+                    ]
+                )
+                detailed_text = full_response.choices[0].message.content
+                text_container.markdown(f"**Teacher:** {first_line}\n\n{detailed_text}")
+                
+                if "Sirf Text" not in mode:
+                    clean_detailed = final_clean_engine(detailed_text)
+                    sentences = clean_detailed.replace("।", ".").split(".")
+                    
+                    for idx, sentence in enumerate(sentences):
+                        if len(sentence.strip()) > 2:
+                            tts_segment = gTTS(text=sentence.strip(), lang=tts_lang, slow=False)
+                            fp_segment = io.BytesIO()
+                            tts_segment.write_to_fp(fp_segment)
+                            fp_segment.seek(0)
+                            st.audio(fp_segment, format="audio/mp3", key=f"fixed_{idx}_{time.time()}")
+                            time.sleep(0.6)
+            except Exception as e: 
+                st.error(f"Handover Error: {str(e)}")
+
+        # इनपुट मेमोरी को साफ़ करना
+        st.session_state.speech_text = ""
+
+with tab2:
+    st.markdown("### 📊 Student Progress Tracker Dashboard Active")
