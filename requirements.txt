@@ -1,6 +1,3 @@
 streamlit
 streamlit-mic-recorder
-groq
-requests
-google-genai
-gTTS
+google-generativeai
