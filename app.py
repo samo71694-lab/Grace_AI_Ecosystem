@@ -31,7 +31,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown("<div class='main-title'>🏫 Grace Study Centre</div>", unsafe_allow_html=True)
-st.markdown("<div class='subtitle'>Advanced Hybrid Voice Protocol (100% Cleaned Code)</div>", unsafe_allow_html=True)
+st.markdown("<div class='subtitle'>Advanced Hybrid Voice Protocol (Language Sync Fixed)</div>", unsafe_allow_html=True)
 
 # FINAL AUDIO TEXT CLEANER ENGINE
 def final_clean_engine(text):
@@ -112,11 +112,25 @@ with tab1:
             except Exception as e: st.error(f"Mic Error: {str(e)}")
 
     if user_query:
-        # SUPER STRICT PROMPT FOR POETRY / KAVITA MODE
-        if "Gana" in mode:
-            prompt_modifier = f"Aap ek school teacher hain. {class_level} ke student {nama} ko {lang} mein samjhayein. Aapka pura jawab STRICTLY bacchon jaisi mast rhyming kavita (poem) ke roop mein hona chahiye jisme geet jaisa swar ho. Bilkul seedha simple text ya paragraph mat likhna. Strictly no headings, no numbers, no musical scales like A flat, 1., or E flat."
+        # Dynamic Script Enforcement based on selection
+        script_instruction = ""
+        tts_lang = 'hi'
+        
+        if "हिंदी" in lang:
+            script_instruction = "STRICTLY write the text in Devanagari Hindi script (हिंदी भाषा और देवनागरी लिपि). Absolutely NO English alphabets, NO Hinglish, NO WhatsApp language allowed."
+            tts_lang = 'hi'
+        elif "ਪੰਜਾਬੀ" in lang:
+            script_instruction = "STRICTLY write the text in Gurmukhi Punjabi script (ਪੰਜਾਬੀ ਭਾਸ਼ਾ). Absolutely NO English alphabets."
+            tts_lang = 'pa'
         else:
-            prompt_modifier = f"Aap ek friendly school teacher hain. {class_level} ke student {nama} ko {lang} mein samjhayein simple paragraphs mein. Strictly NO structural headers, NO bullets, NO numbers like 1, 2, 3 or musical scale notations like A flat, E flat."
+            script_instruction = "Write the text strictly in standard professional English."
+            tts_lang = 'en'
+
+        # SUPER STRICT PROMPT FOR LANGUAGE AND SYSTEM STYLE
+        if "Gana" in mode:
+            prompt_modifier = f"Aap ek school teacher hain. {class_level} ke student {nama} ko samjhayein. {script_instruction} Aapka pura jawab STRICTLY bacchon jaisi mast rhyming kavita (poem) ke roop mein hona chahiye jisme geet jaisa swar ho. Bilkul seedha simple text ya paragraph mat likhna. Strictly no headings, no numbers, no musical scales like A flat, 1., or E flat."
+        else:
+            prompt_modifier = f"Aap ek friendly school teacher hain. {class_level} ke student {nama} ko samjhayein. {script_instruction} Clean paragraph format mein likhein. Strictly NO structural headers, NO bullets, NO numbers like 1, 2, 3 or musical scale notations."
             
         full_prompt = f"{prompt_modifier} Topic: {subject}. Question: {user_query}"
 
@@ -128,7 +142,7 @@ with tab1:
             instant_response = groq_client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=[
-                    {"role": "system", "content": "Generate ONLY ONE short introductory line greeting the child warmly. Max 12 words. Strictly NO numbering, NO musical chords like A flat or 1."},
+                    {"role": "system", "content": f"Generate ONLY ONE short introductory line greeting the child warmly. You must respond strictly in the requested script language system: {script_instruction}. Max 12 words. Strictly NO numbering, NO musical chords like A flat or 1."},
                     {"role": "user", "content": full_prompt}
                 ]
             )
@@ -138,7 +152,7 @@ with tab1:
             clean_first = final_clean_engine(first_line)
             
             if "Sirf Text" not in mode:
-                tts = gTTS(text=clean_first if clean_first else "Aaiye isey samajhte hain.", lang='hi' if 'Hindi' in lang else 'en', slow=False)
+                tts = gTTS(text=clean_first if clean_first else "Aaiye isey samajhte hain.", lang=tts_lang, slow=False)
                 fp = io.BytesIO()
                 tts.write_to_fp(fp)
                 fp.seek(0)
@@ -152,7 +166,7 @@ with tab1:
                 full_response = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
                     messages=[
-                        {"role": "system", "content": "Generate the full main explanation body text based on the style requested. Strictly NO points, NO headers, NO symbols, NO music notes like A-flat, E-flat, or 1."},
+                        {"role": "system", "content": f"Generate the full main explanation body text based on the style requested. You must output 100% in the chosen script language format: {script_instruction}. Strictly NO points, NO headers, NO symbols, NO music notes like A-flat, E-flat, or 1."},
                         {"role": "user", "content": full_prompt}
                     ]
                 )
@@ -162,8 +176,7 @@ with tab1:
                 clean_detailed = final_clean_engine(detailed_text)
                 
                 if "Sirf Text" not in mode:
-                    # Blue st.info alert removed completely from here
-                    tts_full = gTTS(text=clean_detailed, lang='hi' if 'Hindi' in lang else 'en', slow=False)
+                    tts_full = gTTS(text=clean_detailed, lang=tts_lang, slow=False)
                     fp_full = io.BytesIO()
                     tts_full.write_to_fp(fp_full)
                     fp_full.seek(0)
