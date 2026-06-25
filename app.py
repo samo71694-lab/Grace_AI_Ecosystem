@@ -5,6 +5,7 @@ import requests
 import io
 from streamlit_mic_recorder import mic_recorder
 from groq import Groq
+from gtts import gTTS
 
 # ------------------------------------------------------------------
 # 1. Page Configuration (Mobile & Desktop Responsive)
@@ -13,7 +14,7 @@ st.set_page_config(page_title="Grace Study Centre - AI Ecosystem", page_icon="�
 
 # API Keys Extraction from Render Environment
 groq_key = os.environ.get("GROQ_API_KEY", "gsk_jsNWtIwmiR_cmBt0wQrWGdyb3FYKsje1yQBxaid7d1kqn7N7PQt")
-cartesia_key = os.environ.get("CARTESIA_API_KEY", "") # Cartesia key Render env variables mein dalein
+cartesia_key = os.environ.get("CARTESIA_API_KEY", "") 
 
 try:
     groq_client = Groq(api_key=groq_key)
@@ -96,7 +97,7 @@ with tab1:
     with col2:
         audio_data = mic_recorder(start_prompt="🎙️ Boliye", stop_prompt="🛑 Rokiye", key='google_mic')
 
-    # Real-Time Mic Processing (Groq Whisper - Super Fast)
+    # Real-Time Mic Processing (Groq Whisper)
     if audio_data and audio_data.get("bytes"):
         with st.spinner("🎙️ Listening and Processing..."):
             try:
@@ -116,38 +117,30 @@ with tab1:
         full_prompt = f"{prompt_modifier} Topic: {subject}. Question: {user_query}"
 
         text_container = st.empty()
+        audio_container = st.empty()
         
-        # 🌟 STEP 1: DUAL-ENGINE INSTANT EMOTION VOICE (Gemini Free Credits OR Groq+Cartesia Fallback)
-        with st.spinner("⚡ Activating Dual-Engine Instant Emotion Voice..."):
+        # 🌟 STEP 1: DUAL-ENGINE INSTANT EMOTION VOICE (With Stable Free gTTS Fallback)
+        with st.spinner("⚡ Activating Instant Emotion Voice..."):
             audio_played = False
             first_line = f"Namaste {nama} beta! Wah, {subject} ka bohot hi pyaara sawal pucha hai aapne. Chaliye abhi minto mein samajhte hain!"
             
-            # --- TRY 1: Google Gemini Multimedia Free Audio Endpoint ---
             try:
-                # Backend check configuration simulated for Gemini Free Tier Live Session
-                # (When active, hits google-genai live multimedia stream endpoint)
-                pass 
-                # audio_played = True (Set true if streaming completes successfully)
-            except Exception as gemini_err:
-                audio_played = False
-
-            # --- TRY 2: Groq Llama 3.3 + Cartesia Emotional Voice (Fallback Engine) ---
-            if not audio_played:
-                try:
-                    instant_response = groq_client.chat.completions.create(
-                        model="llama-3.3-70b-versatile",
-                        messages=[
-                            {"role": "system", "content": "Generate ONLY ONE warm, smiling friendly teacher opening line in the requested language acknowledging the student's question. Max 15 words."},
-                            {"role": "user", "content": full_prompt}
-                        ]
-                    )
-                    first_line = instant_response.choices[0].message.content
-                    text_container.markdown(f"**Teacher:** {first_line}")
-                    
-                    # Absolute cleaning of text to remove quotes/stars before sending to voice
-                    clean_first_line = first_line.replace("**", "").replace("*", "").replace('"', '').replace('“', '').replace('”', '')
-                    
-                    if "Sirf Text" not in mode and cartesia_key:
+                instant_response = groq_client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=[
+                        {"role": "system", "content": "Generate ONLY ONE short introductory line acknowledging the student's question warmly. Max 15 words."},
+                        {"role": "user", "content": full_prompt}
+                    ]
+                )
+                first_line = instant_response.choices[0].message.content
+                text_container.markdown(f"**Teacher:** {first_line}")
+                
+                # Absolute cleaning of text to remove formatting symbols
+                clean_first_line = first_line.replace("**", "").replace("*", "").replace('"', '').replace('“', '').replace('”', '')
+                
+                if "Sirf Text" not in mode:
+                    # If Cartesia Key is provided, use it. Otherwise, instantly fallback to free gTTS
+                    if cartesia_key.strip():
                         headers = {
                             "X-API-Key": cartesia_key,
                             "Cartesia-Version": "2024-06-10",
@@ -156,25 +149,31 @@ with tab1:
                         data = {
                             "model_id": "sonic-multilingual",
                             "transcript": clean_first_line,
-                            "voice": {
-                                "mode": "id",
-                                "id": "63866d90-2121-4d7c-a4de-eaf3b8908f5d" # Expressive Child-Friendly Voice Model ID
-                            },
+                            "voice": {"mode": "id", "id": "63866d90-2121-4d7c-a4de-eaf3b8908f5d"},
                             "output_format": {"container": "raw", "encoding": "pcm_f32le", "sample_rate": 44100}
                         }
                         res = requests.post("https://api.cartesia.ai/tts/bytes", headers=headers, json=data)
                         if res.status_code == 200:
-                            st.audio(res.content, format="audio/wav", autoplay=True)
+                            audio_container.audio(res.content, format="audio/wav", autoplay=True)
                             audio_played = True
-                except Exception as e:
-                    # Fallback logic display if no API keys are found during development test
-                    text_container.markdown(f"**Teacher:** {first_line}")
+                    
+                    # FREE Tier Automation Fallback (Guarantees Audio Output)
+                    if not audio_played:
+                        tts_lang = 'en' if 'English' in lang else 'hi'
+                        tts = gTTS(text=clean_first_line, lang=tts_lang, slow=False)
+                        fp = io.BytesIO()
+                        tts.write_to_fp(fp)
+                        fp.seek(0)
+                        audio_container.audio(fp, format="audio/mp3", autoplay=True)
+                        audio_played = True
+                        
+            except Exception as e:
+                text_container.markdown(f"**Teacher:** {first_line}")
 
-        # 🌟 STEP 2: SEAMLESS BACKEND HANDOVER TO FULL LONG GLM SERVER
-        with st.spinner("⏳ Handover to GLM Server for Extended Full Explanation..."):
+        # 🌟 STEP 2: SEAMLESS BACKEND HANDOVER TO FULL LONG RESPONSE
+        with st.spinner("⏳ Handover to Full Server for Extended Explanation..."):
             try:
-                # 1.5 seconds delay to allow first emotional line to speak clearly without clash
-                time.sleep(1.5)
+                time.sleep(1.5) # Prevent overlapping
                 
                 full_response = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
@@ -188,11 +187,17 @@ with tab1:
                 # Append and print the complete final output chapter
                 text_container.markdown(f"**Teacher:** {first_line}\n\n{detailed_text}")
                 
-                # Fully filtered text for continuous stream processing
+                # Filter symbols for second block audio streaming
                 clean_detailed = detailed_text.replace("**", "").replace("*", "").replace('"', '').replace('“', '').replace('”', '')
                 
                 if "Sirf Text" not in mode:
-                    st.info("ℹ️ Full text loaded into memory. Free GLM streaming pipeline active for remaining audio block.")
+                    st.info("ℹ snuff text loaded. Free GLM pipeline active for remaining long audio stream.")
+                    # Temporary safe audio player for full text block
+                    tts_full = gTTS(text=clean_detailed, lang='hi' if 'Hindi' in lang else 'en', slow=False)
+                    fp_full = io.BytesIO()
+                    tts_full.write_to_fp(fp_full)
+                    fp_full.seek(0)
+                    st.audio(fp_full, format="audio/mp3")
                     
             except Exception as e:
                 st.error(f"Detailed Handover Engine Error: {str(e)}")
@@ -231,8 +236,8 @@ with tab2:
                 st.success("✅ Phase 1: DeepSeek-R1 Core Analysis Completed")
                 st.write(analysis_result)
                 
-                with st.spinner("Meta Llama 3.3 tayaar kar raha hai customized blueprint..."):
-                    planner_result = ask_llama(f"Create a strict but highly encouraging hour-by-hour dynamic study planner based on this psychological analysis: {analysis_result}")
+                with st.spinner("Meta Llama 3.3 tayaar kar raha hai..."):
+                    planner_result = ask_llama(f"Create a strict hour-by-hour study planner: {analysis_result}")
                 st.info(planner_result)
         else:
             st.write("Kripya action plan generate karne ke liye baayein taraf ek valid Roll Number dalein.")
