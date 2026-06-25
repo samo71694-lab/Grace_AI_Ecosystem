@@ -1,4 +1,6 @@
 streamlit
-streamlit-mic-recorder
-google-generativeai
+groq
 supabase
+gTTS
+streamlit-mic-recorder
+requests
