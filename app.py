@@ -30,7 +30,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown("<div class='main-title'>🏫 Grace Study Centre</div>", unsafe_allow_html=True)
-st.markdown("<div class='subtitle'>Advanced Hybrid Voice Protocol (100% Bug-Free Version)</div>", unsafe_allow_html=True)
+st.markdown("<div class='subtitle'>Advanced Hybrid Voice Protocol (Single Player Audio Implementation)</div>", unsafe_allow_html=True)
 
 # फाइनल ऑडियो टेक्स्ट क्लीनर इंजन
 def final_clean_engine(text):
@@ -56,7 +56,7 @@ if "speech_text" not in st.session_state:
 tab1, tab2 = st.tabs(["🎙️ Student Personal Tutor", "📊 Intelligent Tracker & Planner"])
 
 with tab1:
-    st.markdown("<div class='section-box'><b>👤 Student Profile Settings (छात्र प्रोफाइल设置)</b>", unsafe_allow_html=True)
+    st.markdown("<div class='section-box'><b>👤 Student Profile Settings (छात्र प्रोफाइल सेटिंग)</b>", unsafe_allow_html=True)
     p_col1, p_col2, p_col3, p_col4 = st.columns([1, 1, 1, 1])
     with p_col1: nama = st.text_input("Aapka Naam?", value="Omkar")
     with p_col2: class_level = st.selectbox("Class Level:", ["6th", "7th", "8th", "9th", "10th"], index=2)
@@ -70,7 +70,7 @@ with tab1:
     st.markdown("### 🎤 Sawal Poochen (सवाल पूछें):")
 
     # माइक इनपुट प्रोसेसिंग
-    audio_data = mic_recorder(start_prompt="🎙️ रिकॉर्ड करने के लिए यहाँ दबाएँ", stop_prompt="🛑 रोकने के लिए यहाँ दबाएँ", key='stable_mic_recorder_v5')
+    audio_data = mic_recorder(start_prompt="🎙️ रिकॉर्ड करने के लिए यहाँ दबाएँ", stop_prompt="🛑 रोकने के लिए यहाँ दबाएँ", key='stable_mic_recorder_master')
 
     if audio_data and audio_data.get("bytes"):
         try:
@@ -88,7 +88,7 @@ with tab1:
     submit_button = st.button("जवाब जनरेट करें (Submit Question)", type="primary")
 
     if submit_button and user_query:
-        # bhasha niyam
+        # भाषा और लिपि का सख्त नियम
         script_instruction = ""
         tts_lang = 'hi'
         
@@ -103,9 +103,9 @@ with tab1:
             tts_lang = 'en'
 
         if "Gana" in mode:
-            prompt_modifier = f"Aap ek school teacher hain. {class_level} ke student {nama} ko samjhayein. {script_instruction} Your output response must be a beautifully structured kid's rhyming poem (Kavita structure) so it can be sung easily."
+            prompt_modifier = f"Aap ek school teacher hain. {class_level} ke student {nama} ko samjhayein. {script_instruction} Your output response must be a beautifully structured kid's rhyming poem (Kavita structure) so it can be sung easily. Keep it short, maximum 2 stanzas."
         else:
-            prompt_modifier = f"Aap ek friendly school teacher hain. {class_level} ke student {nama} ko samjhayein. {script_instruction} Simple easy paragraphs without bullets or numbers."
+            prompt_modifier = f"Aap ek friendly school teacher hain. {class_level} ke student {nama} ko samjhayein. {script_instruction} Simple easy paragraphs without bullets or numbers. Keep it concise so it is easy to read."
             
         full_prompt = f"{prompt_modifier} Topic: {subject}. Question: {user_query}"
 
@@ -122,18 +122,10 @@ with tab1:
             )
             first_line = instant_response.choices[0].message.content
             text_container.markdown(f"**Teacher:** {first_line}")
-            
-            if "Sirf Text" not in mode:
-                clean_first = final_clean_engine(first_line)
-                tts = gTTS(text=clean_first if clean_first else "आइए समझते हैं।", lang=tts_lang, slow=False)
-                fp = io.BytesIO()
-                tts.write_to_fp(fp)
-                fp.seek(0)
-                st.audio(fp, format="audio/mp3", autoplay=True)
         except: 
-            pass
+            first_line = "आइए इसे समझते हैं।"
 
-        # चरण २: पूर्ण विवरण ऑडियो ठहराव के साथ
+        # चरण २: पूर्ण विवरण और कंबाइंड सिंगल प्लेयर ऑडियो (Single Master Audio Player)
         with st.spinner("⏳ उत्तर लोड हो रहा है..."):
             try:
                 full_response = groq_client.chat.completions.create(
@@ -144,22 +136,24 @@ with tab1:
                     ]
                 )
                 detailed_text = full_response.choices[0].message.content
+                
+                # स्क्रीन पर पूरा टेक्स्ट प्रिंट करना
                 text_container.markdown(f"**Teacher:** {first_line}\n\n{detailed_text}")
                 
                 if "Sirf Text" not in mode:
-                    clean_detailed = final_clean_engine(detailed_text)
+                    # पूरे टेक्स्ट को एक साथ जोड़कर साफ करना
+                    full_speech_text = f"{first_line}. {detailed_text}"
+                    clean_full_text = final_clean_engine(full_speech_text)
                     
-                    # वाक्य विभाजन फ़िल्टर (बिना 'key' पैरामीटर के एरर-फ्री कोड)
-                    sentences = clean_detailed.replace("।", ".").split(".")
+                    # 🎯 जादू: पूरा टेक्स्ट एक ही मास्टर ऑडियो प्लेयर में कंबाइन होगा
+                    tts_master = gTTS(text=clean_full_text, lang=tts_lang, slow=False)
+                    fp_master = io.BytesIO()
+                    tts_master.write_to_fp(fp_master)
+                    fp_master.seek(0)
                     
-                    for idx, sentence in enumerate(sentences):
-                        if len(sentence.strip()) > 2:
-                            tts_segment = gTTS(text=sentence.strip(), lang=tts_lang, slow=False)
-                            fp_segment = io.BytesIO()
-                            tts_segment.write_to_fp(fp_segment)
-                            fp_segment.seek(0)
-                            st.audio(fp_segment, format="audio/mp3")
-                            time.sleep(0.6)
+                    # स्क्रीन पर केवल एक ही मास्टर प्लेयर दिखाई देगा
+                    st.audio(fp_master, format="audio/mp3")
+                    
             except Exception as e: 
                 st.error(f"Handover Error: {str(e)}")
 
