@@ -30,7 +30,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown("<div class='main-title'>🏫 Grace Study Centre</div>", unsafe_allow_html=True)
-st.markdown("<div class='subtitle'>Advanced Hybrid Voice Protocol (100% Stable Version)</div>", unsafe_allow_html=True)
+st.markdown("<div class='subtitle'>Advanced Hybrid Voice Protocol (100% Bug-Free Version)</div>", unsafe_allow_html=True)
 
 # फाइनल ऑडियो टेक्स्ट क्लीनर इंजन
 def final_clean_engine(text):
@@ -56,7 +56,7 @@ if "speech_text" not in st.session_state:
 tab1, tab2 = st.tabs(["🎙️ Student Personal Tutor", "📊 Intelligent Tracker & Planner"])
 
 with tab1:
-    st.markdown("<div class='section-box'><b>👤 Student Profile Settings (छात्र प्रोफाइल सेटिंग)</b>", unsafe_allow_html=True)
+    st.markdown("<div class='section-box'><b>👤 Student Profile Settings (छात्र प्रोफाइल设置)</b>", unsafe_allow_html=True)
     p_col1, p_col2, p_col3, p_col4 = st.columns([1, 1, 1, 1])
     with p_col1: nama = st.text_input("Aapka Naam?", value="Omkar")
     with p_col2: class_level = st.selectbox("Class Level:", ["6th", "7th", "8th", "9th", "10th"], index=2)
@@ -70,7 +70,7 @@ with tab1:
     st.markdown("### 🎤 Sawal Poochen (सवाल पूछें):")
 
     # माइक इनपुट प्रोसेसिंग
-    audio_data = mic_recorder(start_prompt="🎙️ रिकॉर्ड करने के लिए यहाँ दबाएँ", stop_prompt="🛑 रोकने के लिए यहाँ दबाएँ", key='stable_mic_recorder_v4')
+    audio_data = mic_recorder(start_prompt="🎙️ रिकॉर्ड करने के लिए यहाँ दबाएँ", stop_prompt="🛑 रोकने के लिए यहाँ दबाएँ", key='stable_mic_recorder_v5')
 
     if audio_data and audio_data.get("bytes"):
         try:
@@ -88,7 +88,7 @@ with tab1:
     submit_button = st.button("जवाब जनरेट करें (Submit Question)", type="primary")
 
     if submit_button and user_query:
-        # भाषा और स्क्रिप्ट निर्धारण का सख्त नियम
+        # bhasha niyam
         script_instruction = ""
         tts_lang = 'hi'
         
@@ -148,6 +148,8 @@ with tab1:
                 
                 if "Sirf Text" not in mode:
                     clean_detailed = final_clean_engine(detailed_text)
+                    
+                    # वाक्य विभाजन फ़िल्टर (बिना 'key' पैरामीटर के एरर-फ्री कोड)
                     sentences = clean_detailed.replace("।", ".").split(".")
                     
                     for idx, sentence in enumerate(sentences):
@@ -156,12 +158,12 @@ with tab1:
                             fp_segment = io.BytesIO()
                             tts_segment.write_to_fp(fp_segment)
                             fp_segment.seek(0)
-                            st.audio(fp_segment, format="audio/mp3", key=f"fixed_{idx}_{time.time()}")
+                            st.audio(fp_segment, format="audio/mp3")
                             time.sleep(0.6)
             except Exception as e: 
                 st.error(f"Handover Error: {str(e)}")
 
-        # इनपुट मेमोरी को साफ़ करना
+        # इनपुट मेमोरी साफ़ करना
         st.session_state.speech_text = ""
 
 with tab2:
