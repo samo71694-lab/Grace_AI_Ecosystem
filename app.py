@@ -30,7 +30,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown("<div class='main-title'>🏫 Grace Study Centre</div>", unsafe_allow_html=True)
-st.markdown("<div class='subtitle'>Advanced Hybrid Voice Protocol (Language & Mic Absolute Fix)</div>", unsafe_allow_html=True)
+st.markdown("<div class='subtitle'>Advanced Hybrid Voice Protocol (Absolute Audio Player Fix)</div>", unsafe_allow_html=True)
 
 # फाइनल ऑडियो टेक्स्ट क्लीनर इंजन
 def final_clean_engine(text):
@@ -77,11 +77,10 @@ with tab1:
     with col1: 
         user_query = st.text_input("Apna sawal type karein...", value=st.session_state.speech_text, key="text_query", label_visibility="collapsed")
     with col2: 
-        audio_data = mic_recorder(start_prompt="🎙️ Boliye", stop_prompt="🛑 Rokiye", key='google_mic_fixed')
+        audio_data = mic_recorder(start_prompt="🎙️ Boliye", stop_prompt="🛑 Rokiye", key='google_mic_final_v1')
 
-    # माइक से इनपुट प्रोसेसिंग का सुधरा हुआ भाग
     if audio_data and audio_data.get("bytes"):
-        with st.spinner("🎙️ प्रोसेसिंग चालू है..."):
+        with st.spinner("🎙️ ऑडियो से टेक्स्ट बदला जा रहा है..."):
             try:
                 file_placeholder = ("temp_audio.wav", audio_data["bytes"], "audio/wav")
                 transcription = groq_client.audio.transcriptions.create(file=file_placeholder, model="whisper-large-v3-turbo")
@@ -89,40 +88,39 @@ with tab1:
                     st.session_state.speech_text = transcription.text
                     st.rerun()
             except Exception as e: 
-                st.info("💡 मोबाइल नेटवर्क सुरक्षा के कारण टाइपिंग का उपयोग करें।")
+                st.warning("💡 टाइपिंग का उपयोग करके नीचे अपना सवाल लिखें।")
 
     if user_query:
-        # भाषा चयन का सख्त नियंत्रण तंत्र
+        # भाषा स्क्रिप्ट निर्धारण
         script_instruction = ""
         tts_lang = 'hi'
         
         if "हिंदी" in lang:
-            script_instruction = "You must output 100% in pure Devanagari Hindi script (हिंदी भाषा). Absolutely NO English words, NO Roman script allowed. Use proper full stops (।)."
+            script_instruction = "You must output 100% in pure Devanagari Hindi script (हिंदी भाषा). Absolutely NO English words. Use proper full stops (।)."
             tts_lang = 'hi'
         elif "ਪੰਜਾਬੀ" in lang:
-            script_instruction = "You must output 100% in pure Gurmukhi Punjabi script (ਪੰਜਾਬੀ ਭਾਸ਼ਾ ਭਾਗ). Do NOT write in English or Hindi. Output must be purely in Punjabi alphabets (ੳ ਅ ੲ ਸ ਹ)."
+            script_instruction = "You must output 100% in pure Gurmukhi Punjabi script (ਪੰਜਾਬੀ ਭਾਸ਼ਾ ਭਾਗ). Do NOT write in English or Hindi."
             tts_lang = 'pa'
         else:
             script_instruction = "Write the text strictly in simple standard school English text only."
             tts_lang = 'en'
 
-        # मोड के अनुसार प्रॉम्प्ट मॉडिफायर
         if "Gana" in mode:
-            prompt_modifier = f"Aap ek school teacher hain. {class_level} ke student {nama} ko samjhayein. {script_instruction} Your output response must be a beautifully structured kid's rhyming poem/poem (Kavita/Kavita structure) so it can be sung easily. Do not write normal paragraphs."
+            prompt_modifier = f"Aap ek school teacher hain. {class_level} ke student {nama} ko samjhayein. {script_instruction} Your output response must be a beautifully structured kid's rhyming poem (Kavita structure) so it can be sung easily."
         else:
             prompt_modifier = f"Aap ek friendly school teacher hain. {class_level} ke student {nama} ko samjhayein. {script_instruction} Simple easy paragraphs without bullets or numbers."
             
         full_prompt = f"{prompt_modifier} Topic: {subject}. Question: {user_query}"
 
+        # ऑडियो और टेक्स्ट के पुराने रीलोडिंग को साफ़ करने के लिए कंटेनर
         text_container = st.empty()
-        audio_container = st.empty()
         
         # चरण १: तुरंत पहली लाइन बोलना (Greeting Line)
         try:
             instant_response = groq_client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=[
-                    {"role": "system", "content": f"Generate ONLY ONE short introductory greeting line. You must strictly output 100% in the chosen language script rules: {script_instruction}. Maximum 8 words. No English chords."},
+                    {"role": "system", "content": f"Generate ONLY ONE short introductory greeting line. You must strictly output 100% in the chosen language script rules: {script_instruction}. Maximum 8 words."},
                     {"role": "user", "content": full_prompt}
                 ]
             )
@@ -135,12 +133,13 @@ with tab1:
                 fp = io.BytesIO()
                 tts.write_to_fp(fp)
                 fp.seek(0)
-                audio_container.audio(fp, format="audio/mp3", autoplay=True)
+                # प्रत्येक ऑडियो प्लेयर को अलग की (Key) दी गई है ताकि पुराना प्लेयर तुरंत रीसेट हो जाए
+                st.audio(fp, format="audio/mp3", autoplay=True)
         except: 
             pass
 
-        # चरण २: पूर्ण विस्तृत विवरण ठहराव के साथ (Extended Pipeline)
-        with st.spinner("⏳ उत्तर तैयार किया जा रहा है..."):
+        # चरण २: पूर्ण विवरण ऑडियो ठहराव के साथ
+        with st.spinner("⏳ उत्तर लोड हो रहा है..."):
             try:
                 time.sleep(1.0)
                 full_response = groq_client.chat.completions.create(
@@ -156,8 +155,7 @@ with tab1:
                 if "Sirf Text" not in mode:
                     clean_detailed = final_clean_engine(detailed_text)
                     
-                    # विराम चिन्हों के आधार पर वाक्यों को अलग करके रोक-रोक कर बुलवाना
-                    delimiter = "." if tts_lang == 'en' else "।"
+                    # वाक्यों को विभाजित करके ठहराव देना
                     sentences = clean_detailed.replace("।", ".").split(".")
                     
                     for idx, sentence in enumerate(sentences):
@@ -166,8 +164,8 @@ with tab1:
                             fp_segment = io.BytesIO()
                             tts_segment.write_to_fp(fp_segment)
                             fp_segment.seek(0)
-                            st.audio(fp_segment, format="audio/mp3")
-                            # ०.६ सेकंड का सांस लेने का ठहराव
+                            # डायनामिक की (Key) ताकि ऑडियो कभी भी अटके नहीं
+                            st.audio(fp_segment, format="audio/mp3", key=f"seg_{idx}_{time.time()}")
                             time.sleep(0.6)
             except Exception as e: 
                 st.error(f"Handover Error: {str(e)}")
