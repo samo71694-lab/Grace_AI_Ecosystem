@@ -6,7 +6,7 @@ from streamlit_mic_recorder import mic_recorder
 from groq import Groq
 from gtts import gTTS
 
-# === १ से ५ क्लास का मैथ सिलेबस (बाकी विषयों के लिए एआई ऑटोमैटिक दिमाग लगाएगा) ===
+# === १ से ५ क्लास का मैथ सिलेबस ===
 SYLLABUS_DATABASE = [
     {"class_name": "Class 1", "level_type": "Basic (Zero Level)", "subject": "Mathematics", "content_data": "Class 1 Basic Level covers counting numbers from 1 to 50, identifying smaller and bigger numbers, and very simple single-digit addition.", "image_prompt": "Cute children mathematics book illustration showing cartoon apples for single digit addition 2 plus 3"},
     {"class_name": "Class 1", "level_type": "Medium Level", "subject": "Mathematics", "content_data": "Class 1 Medium Level introduces numbers up to 100, double-digit addition without carrying, single-digit subtraction.", "image_prompt": "Colorful math worksheet background with numbers 1 to 100"},
@@ -29,8 +29,10 @@ except:
 st.markdown("<h1 style='text-align: center; color: #1E3A8A;'>🏫 Grace Study Centre</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; color: #555555; font-weight: bold;'>3-Level Personalized AI Ecosystem</p>", unsafe_allow_html=True)
 
-tab1, tab2 = st.tabs(["🎙️ Student Personal Tutor", "📊 Supabase Connector & Planner"])
+# === यहाँ बनाएँगे ३ बिल्कुल अलग-अलग खांचे (Tabs) ===
+tab1, tab2, tab3 = st.tabs(["🎙️ Student Personal Tutor", "📊 Intelligent Tracker & Planner", "⚡ Supabase Connector"])
 
+# --- पहला खांचा: पर्सनल ट्यूटर एजेंट ---
 with tab1:
     st.markdown("### 👤 Student Profile & Language Settings")
     col1, col2, col3, col4 = st.columns(4)
@@ -73,14 +75,12 @@ with tab1:
         db_context = ""
         db_image_prompt = ""
         
-        # सिलेक्टेड सब्जेक्ट का डेटा ढूंढें
         for row in SYLLABUS_DATABASE:
             if row["class_name"] == class_level and row["subject"] == subject and row["level_type"] == current_level:
                 db_context = row["content_data"]
                 db_image_prompt = row["image_prompt"]
                 break
 
-        # अगर दूसरा सब्जेक्ट (जैसे English) है, तो जबरदस्ती मैथ्स नहीं आएगा, बल्कि एआई खुद संभालेगा
         if not db_context:
             db_context = f"Dynamic standard curriculum for {class_level} {subject}."
             db_image_prompt = f"Educational clean illustration representing {subject} learning for kids"
@@ -100,23 +100,22 @@ with tab1:
                 )
                 detailed_text = full_response.choices[0].message.content
             except:
-                detailed_text = f"नमस्ते {nama}! आपके {class_level} {subject} के अनुसार आपके सवाल '{user_query}' का अध्ययन शुरू करते हैं।"
+                detailed_text = f"नमस्ते {nama}! आपके {class_level} {subject} के अनुसार आपके सवाल का अध्ययन शुरू करते हैं।"
 
             st.markdown(f"**Teacher:**\n\n{detailed_text}")
 
-            # --- फोटो १: तुरंत आने वाली रैंडम फोटो ---
+            # --- फोटो १: त्वरित रैंडम फोटो ---
             st.markdown("#### 🖼️ Quick Visual Reference (Photo 1)")
             final_img_prompt = db_image_prompt if db_image_prompt else f"Educational clean diagram for kids showing {user_query}"
             encoded_prompt1 = urllib.parse.quote(final_img_prompt)
             image_url1 = f"https://image.pollinations.ai/prompt/{encoded_prompt1}?width=800&height=500&nologo=true"
             st.image(image_url1, caption="Quick Reference")
 
-            # --- फोटो २: जेमिनी का दिमाग लगी ८K प्रीमियम फोटो ---
+            # --- फोटो २: जेमिनी दिमाग ८K प्रीमियम फोटो ---
             st.markdown("#### 🧠 Gemini Brain Advanced Smart Illustration (Photo 2 - 8K Quality)")
-            with st.spinner("🧠 जेमिनी एआई अपना दिमाग लगाकर हाई-क्वालिटी फोटो तैयार कर रहा है..."):
+            with st.spinner("🧠 जेमिनी एआई आपके सवाल-जवाब के सटीक तालमेल से 8K फोटो बना रहा है..."):
                 try:
-                    # जेमिनी स्टाइल प्रॉम्प्ट मेकर (लॉजिकली रिफाइंड)
-                    gemini_smart_prompt = f"An ultra-realistic hyper-detailed 8k resolution educational children textbook illustration, perfectly matching the question '{user_query}' and answer '{detailed_text[:100]}', bright colors, award winning visuals, highly clear for student understanding, non-abstract, cinematic lighting, sharp focus"
+                    gemini_smart_prompt = f"An ultra-realistic hyper-detailed 8k resolution educational children textbook illustration, perfectly matching the question '{user_query}' and answer '{detailed_text[:120]}', bright colors, cinematic lighting, sharp focus, clear academic visualization for school kids"
                     encoded_prompt2 = urllib.parse.quote(gemini_smart_prompt)
                     image_url2 = f"https://image.pollinations.ai/prompt/{encoded_prompt2}?width=1024&height=1024&nologo=true&enhance=true"
                     st.image(image_url2, caption="Gemini 8K Smart Visual Guide")
@@ -134,9 +133,15 @@ with tab1:
                     pass
         st.session_state.speech_text = ""
 
+# --- दूसरा खांचा: इंटेलिजेंट ट्रैकर एजेंट (बिल्कुल अलग) ---
 with tab2:
+    st.markdown("### 📊 Student Progress Tracker Dashboard")
+    st.write("Welcome to your Intelligent Tracker & Planner agent. Track chapters completed, student performance charts, and automated study schedules here.")
+
+# --- तीसरा खांचा: सुपाबेस कनेक्टर (सिर्फ डेटाबेस लिंक हब) ---
+with tab3:
     st.markdown("### ⚡ Supabase Live Database Configuration Control")
-    st.info("Yahan se aap apne Grace Study Centre ke live student data report ko cloud se link kar sakte hain.")
+    st.info("Yahan se aap apne Grace Study Centre ke live student data link (Credentials) ko secure connect kar sakte hain.")
     
     col_sub1, col_sub2 = st.columns(2)
     with col_sub1:
