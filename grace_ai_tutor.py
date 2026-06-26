@@ -29,7 +29,7 @@ except:
 st.markdown("<h1 style='text-align: center; color: #1E3A8A;'>🏫 Grace Study Centre</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; color: #555555; font-weight: bold;'>3-Level Personalized AI Ecosystem</p>", unsafe_allow_html=True)
 
-# === यहाँ बनाएँगे ३ बिल्कुल अलग-अलग खांचे (Tabs) ===
+# === ३ अलग-अलग नीट एंड क्लीन खांचे ===
 tab1, tab2, tab3 = st.tabs(["🎙️ Student Personal Tutor", "📊 Intelligent Tracker & Planner", "⚡ Supabase Connector"])
 
 # --- पहला खांचा: पर्सनल ट्यूटर एजेंट ---
@@ -72,6 +72,24 @@ with tab1:
     submit_button = st.button("जवाब जनरेट करें (Submit)", type="primary")
 
     if submit_button and user_query:
+        # --- सुपाबेस लाइव डेटा ऑटो-अपलोड इंजन ---
+        if st.session_state.get("sb_url") and st.session_state.get("sb_key"):
+            try:
+                from supabase import create_client
+                url_db = st.session_state["sb_url"]
+                key_db = st.session_state["sb_key"]
+                if "your-project" not in url_db and "eyJhbGci" not in key_db:
+                    sb_client = create_client(url_db, key_db)
+                    log_payload = {
+                        "student_name": str(nama),
+                        "class_level": str(class_level),
+                        "subject": str(subject),
+                        "student_query": str(user_query)
+                    }
+                    sb_client.table("grace_ai_tutor_logs").insert(log_payload).execute()
+            except:
+                pass
+
         db_context = ""
         db_image_prompt = ""
         
@@ -133,21 +151,21 @@ with tab1:
                     pass
         st.session_state.speech_text = ""
 
-# --- दूसरा खांचा: इंटेलिजेंट ट्रैकर एजेंट (बिल्कुल अलग) ---
+# --- दूसरा खांचा: इंटेलिजेंट ट्रैकर एजेंट ---
 with tab2:
     st.markdown("### 📊 Student Progress Tracker Dashboard")
     st.write("Welcome to your Intelligent Tracker & Planner agent. Track chapters completed, student performance charts, and automated study schedules here.")
 
-# --- तीसरा खांचा: सुपाबेस कनेक्टर (सिर्फ डेटाबेस लिंक हब) ---
+# --- तीसरा खांचा: सुपाबेस कनेक्टर (सुरक्षित डिब्बा) ---
 with tab3:
     st.markdown("### ⚡ Supabase Live Database Configuration Control")
     st.info("Yahan se aap apne Grace Study Centre ke live student data link (Credentials) ko secure connect kar sakte hain.")
     
     col_sub1, col_sub2 = st.columns(2)
     with col_sub1:
-        supabase_url = st.text_input("Supabase Project URL:", value="https://your-project.supabase.co", type="password")
+        st.text_input("Supabase Project URL:", value="https://your-project.supabase.co", type="password", key="sb_url")
     with col_sub2:
-        supabase_key = st.text_input("Supabase Anon API Key:", value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...", type="password")
+        st.text_input("Supabase Anon API Key:", value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...", type="password", key="sb_key")
         
     if st.button("Connect & Save Database Link", type="secondary"):
         st.success("Supabase Database link configuration updated successfully!")
