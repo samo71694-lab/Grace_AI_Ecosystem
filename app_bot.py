@@ -6,10 +6,10 @@ import requests
 app = Flask(__name__)
 
 # =================================================================
-# 🔑 क्रेडेंशियल्स (आपकी बिल्कुल सही सेटिंग्स)
+# 🔑 क्रेडेंशियल्स (आपकी नई डीपसीक सेटिंग्स)
 GREEN_API_ID = "7107664395"
 GREEN_API_TOKEN = "4857c575c0ff4023a7aeb6bc6ba1813a04b80438d8624857a3"
-GEMINI_API_KEY = "AQ.Ab8RN6L4DDji2EX4hL4dGE9qazyRJlSDy04Cco5LuPKOKzZFKQ"
+DEEPSEEK_API_KEY = "sk-fb7555e00a6b482b9ffdde09012938fe"
 # =================================================================
 
 def load_student_data():
@@ -31,32 +31,29 @@ def send_whatsapp_message(to_number, text):
     except Exception as e:
         print(f"मैसेज भेजने में एरर: {e}")
 
-def call_gemini_direct(prompt):
-    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+def call_deepseek(prompt):
+    """डीपसीक एपीआई को सीधे कॉल करने वाला फंक्शन"""
+    url = "https://api.deepseek.com/chat/completions"
     
-    payload = {
-        "contents": [{
-            "parts": [{"text": prompt}]
-        }]
-    }
-    
-    headers_token = {
-        "Authorization": f"Bearer {GEMINI_API_KEY}",
+    headers = {
+        "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
         "Content-Type": "application/json"
     }
     
+    payload = {
+        "model": "deepseek-chat",
+        "messages": [
+            {"role": "user", "content": prompt}
+        ],
+        "stream": False
+    }
+    
     try:
-        response = requests.post(url, json=payload, headers=headers_token)
+        response = requests.post(url, json=payload, headers=headers)
         if response.status_code == 200:
-            return response.json()['candidates'][0]['content']['parts'][0]['text']
-        
-        url_with_key = f"{url}?key={GEMINI_API_KEY}"
-        response_key = requests.post(url_with_key, json=payload, headers={"Content-Type": "application/json"})
-        if response_key.status_code == 200:
-            return response_key.json()['candidates'][0]['content']['parts'][0]['text']
-            
-        return f"⚠️ जेमिनी एरर: कोड ने दोनों तरीके ट्राई किए पर काम नहीं बना। (Status: {response_key.status_code})"
-        
+            return response.json()['choices'][0]['message']['content']
+        else:
+            return f"⚠️ डीपसीक एरर: सर्वर ने जवाब नहीं दिया। (Status Code: {response.status_code})"
     except Exception as e:
         return f"⚠️ कनेक्शन एरर: {str(e)}"
 
@@ -65,6 +62,7 @@ def whatsapp_webhook():
     data = request.json
     webhook_type = data.get("typeWebhook")
     
+    # सिर्फ आपके फोन से भेजे गए Outgoing मैसेज को ट्रैक करें
     if webhook_type == "outgoingMessageReceived":
         try:
             message_text = data["messageData"]["textMessageData"]["textMessage"].strip()
@@ -72,6 +70,7 @@ def whatsapp_webhook():
         except Exception:
             return jsonify({"status": "ignored"}), 200
         
+        # सीक्रेट कोड चेक: अगर मैसेज '#' से शुरू होता है
         if message_text.startswith('#'):
             student_query = message_text[1:].strip()
             
@@ -79,20 +78,24 @@ def whatsapp_webhook():
             students_context = json.dumps(students, indent=2, ensure_ascii=False)
             
             prompt = f"""
-            तुम 'Grace Study Centre' के पर्सनल व्हाट्सएप असिस्टेंट हो। छात्र डेटा:
+            तुम 'Grace Study Centre' के पर्सनल व्हाट्सएप असिस्टेंट हो। छात्र डेटा नीचे दिया गया है:
             {students_context}
-            सवाल: {student_query} की फीस का ब्यौरा दो।
-            नियम: पूरी तरह हिंदी में जवाब दो। केवल काम की बात और फीस का सटीक विवरण लिखो।
+            
+            सवाल: {student_query} की फीस का पूरा ब्यौरा दो।
+            नियम: पूरी तरह हिंदी में जवाब दो। केवल काम की बात और फीस का सटीक विवरण पॉइंट बनाकर लिखो। फालतू बातें मत लिखना।
             """
             
-            ai_reply = call_gemini_direct(prompt)
+            # डीपसीक से जवाब लाएं
+            ai_reply = call_deepseek(prompt)
+            
+            # वापस उसी चैट में भेजें
             send_whatsapp_message(chat_id, ai_reply)
 
     return jsonify({"status": "success"}), 200
 
 @app.route('/')
 def home():
-    return "Grace Study Centre Smart Direct-Engine is Running!"
+    return "Grace Study Centre DeepSeek-Engine is Running Perfectly!"
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
