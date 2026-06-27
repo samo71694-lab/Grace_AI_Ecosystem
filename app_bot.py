@@ -6,10 +6,10 @@ import requests
 app = Flask(__name__)
 
 # =================================================================
-# 🔑 क्रेडेंशियल्स (आपकी नई डीपसीक सेटिंग्स)
+# 🔑 क्रेडेंशियल्स (आपकी बिल्कुल मुफ़्त Groq सेटिंग्स)
 GREEN_API_ID = "7107664395"
 GREEN_API_TOKEN = "4857c575c0ff4023a7aeb6bc6ba1813a04b80438d8624857a3"
-DEEPSEEK_API_KEY = "sk-fb7555e00a6b482b9ffdde09012938fe"
+GROQ_API_KEY = "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"
 # =================================================================
 
 def load_student_data():
@@ -31,21 +31,20 @@ def send_whatsapp_message(to_number, text):
     except Exception as e:
         print(f"मैसेज भेजने में एरर: {e}")
 
-def call_deepseek(prompt):
-    """डीपसीक एपीआई को सीधे कॉल करने वाला फंक्शन"""
-    url = "https://api.deepseek.com/chat/completions"
+def call_groq(prompt):
+    """मुफ़्त Groq API को सीधे कॉल करने वाला फंक्शन"""
+    url = "https://api.groq.com/openai/v1/chat/completions"
     
     headers = {
-        "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
+        "Authorization": f"Bearer {GROQ_API_KEY}",
         "Content-Type": "application/json"
     }
     
     payload = {
-        "model": "deepseek-chat",
+        "model": "llama3-8b-8192",
         "messages": [
             {"role": "user", "content": prompt}
-        ],
-        "stream": False
+        ]
     }
     
     try:
@@ -53,7 +52,7 @@ def call_deepseek(prompt):
         if response.status_code == 200:
             return response.json()['choices'][0]['message']['content']
         else:
-            return f"⚠️ डीपसीक एरर: सर्वर ने जवाब नहीं दिया। (Status Code: {response.status_code})"
+            return f"⚠️ Groq एरर: सर्वर ने जवाब नहीं दिया। (Status Code: {response.status_code})"
     except Exception as e:
         return f"⚠️ कनेक्शन एरर: {str(e)}"
 
@@ -85,8 +84,8 @@ def whatsapp_webhook():
             नियम: पूरी तरह हिंदी में जवाब दो। केवल काम की बात और फीस का सटीक विवरण पॉइंट बनाकर लिखो। फालतू बातें मत लिखना।
             """
             
-            # डीपसीक से जवाब लाएं
-            ai_reply = call_deepseek(prompt)
+            # Groq से जवाब लाएं
+            ai_reply = call_groq(prompt)
             
             # वापस उसी चैट में भेजें
             send_whatsapp_message(chat_id, ai_reply)
@@ -95,7 +94,7 @@ def whatsapp_webhook():
 
 @app.route('/')
 def home():
-    return "Grace Study Centre DeepSeek-Engine is Running Perfectly!"
+    return "Grace Study Centre Groq-Engine is Running Perfectly!"
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
