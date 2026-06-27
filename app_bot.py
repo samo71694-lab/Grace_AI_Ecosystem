@@ -7,15 +7,13 @@ import google.generativeai as genai
 app = Flask(__name__)
 
 # =================================================================
-# 🔑 क्रेडेंशियल्स
+# 🔑 क्रेडेंशियल्स (आपकी बिल्कुल सही सेटिंग्स)
 GREEN_API_ID = "7107664395"
 GREEN_API_TOKEN = "4857c575c0ff4023a7aeb6bc6ba1813a04b80438d8624857a3"
 GEMINI_API_KEY = "AQ.Ab8RN6I-tIfhBNJn5J60TRP_LjadX7ByjOlo3hQXiMqwIYJu1Q"
-OMKAR_SIR_NUMBER = "919569912633"
 # =================================================================
 
 genai.configure(api_key=GEMINI_API_KEY)
-BOT_MEMORY = {}
 
 def load_student_data():
     db_path = os.path.join('data', 'students.json')
@@ -41,55 +39,43 @@ def whatsapp_webhook():
     data = request.json
     webhook_type = data.get("typeWebhook")
     
-    # 🚀 सुधार: बाहर से आए (incoming) और खुद के फोन से भेजे गए (outgoing) दोनों मैसेजेस को स्वीकार करें
-    if webhook_type in ["incomingMessageReceived", "outgoingMessageReceived"]:
+    # 🚀 सिर्फ आपके द्वारा फोन से भेजे गए (outgoing) मैसेज को ट्रैक करें
+    if webhook_type == "outgoingMessageReceived":
         try:
-            sender = data["senderData"]["sender"].split("@")[0]
             message_text = data["messageData"]["textMessageData"]["textMessage"].strip()
+            chat_id = data["senderData"]["chatId"].split("@")[0]
         except Exception:
             return jsonify({"status": "ignored"}), 200
         
-        if sender == OMKAR_SIR_NUMBER:
+        # 🔐 सीक्रेट कोड चेक: अगर मैसेज '#' से शुरू होता है
+        if message_text.startswith('#'):
+            student_query = message_text[1:].strip() # '#' हटाकर नाम अलग करें
+            
             students = load_student_data()
             students_context = json.dumps(students, indent=2, ensure_ascii=False)
             
-            if message_text == '1' and sender in BOT_MEMORY:
-                pending_job = BOT_MEMORY[sender]
-                send_whatsapp_message(pending_job["parent_phone"], pending_job["draft_message"])
-                send_whatsapp_message(OMKAR_SIR_NUMBER, f"✅ सफलता! {pending_job['student_name']} के पैरेंट को फीस रिमाइंडर भेज दिया गया है।")
-                del BOT_MEMORY[sender]
-                return jsonify({"status": "success"})
-                
             try:
                 model = genai.GenerativeModel('gemini-1.5-flash')
                 prompt = f"""
                 तुम 'Grace Study Centre' के पर्सनल व्हाट्सएप असिस्टेंट हो। छात्र डेटा:
                 {students_context}
-                सवाल: {message_text}
-                नियम: पूरी तरह हिंदी में जवाब दो। अगर किसी छात्र की फीस पूछी है, तो विवरण के अंत में अनिवार्य रूप से यह लिखें: "👉 पैरेंट को यह मैसेज भेजने के लिए केवल '1' लिखकर रिप्लाई करें।"
+                सवाल: {student_query} की फीस का ब्यौरा दो।
+                नियम: पूरी तरह हिंदी में जवाब दो। केवल काम की बात और फीस का सटीक विवरण लिखो।
                 """
                 response = model.generate_content(prompt)
                 ai_reply = response.text
                 
-                for roll, info in students.items():
-                    if info["name"].lower() in message_text.lower() or message_text.lower() in info["name"].lower():
-                        BOT_MEMORY[sender] = {
-                            "student_name": info["name"],
-                            "parent_phone": info.get("parent_phone", ""),
-                            "draft_message": ai_reply.replace("👉 पैरेंट को यह मैसेज भेजने के लिए केवल '1' लिखकर रिप्लाई करें।", "").strip()
-                        }
-                        break
-                
-                send_whatsapp_message(OMKAR_SIR_NUMBER, ai_reply)
+                # 🎯 जवाब उसी चैट में वापस जाएगा जहाँ आपने कोड टाइप किया था
+                send_whatsapp_message(chat_id, ai_reply)
                 
             except Exception as e:
-                send_whatsapp_message(OMKAR_SIR_NUMBER, f"⚠️ जेमिनी एरर: {str(e)}")
+                send_whatsapp_message(chat_id, f"⚠️ जेमिनी एरर: {str(e)}")
 
     return jsonify({"status": "success"}), 200
 
 @app.route('/')
 def home():
-    return "Grace Study Centre Cloud Engine is Running Perfectly!"
+    return "Grace Study Centre Secret-Command Engine is Running Perfectly!"
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
