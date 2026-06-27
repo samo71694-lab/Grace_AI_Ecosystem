@@ -10,7 +10,7 @@ app = Flask(__name__)
 # 🔑 क्रेडेंशियल्स (आपकी बिल्कुल सही सेटिंग्स)
 GREEN_API_ID = "7107664395"
 GREEN_API_TOKEN = "4857c575c0ff4023a7aeb6bc6ba1813a04b80438d8624857a3"
-GEMINI_API_KEY = "AQ.Ab8RN6I-tIfhBNJn5J60TRP_LjadX7ByjOlo3hQXiMqwIYJu1Q"
+GEMINI_API_KEY = "AQ.Ab8RN6LGA4A0fXcNUQP4HbG8EX8WReHdWQNOuOvPDm1yrFQYDg"
 # =================================================================
 
 genai.configure(api_key=GEMINI_API_KEY)
