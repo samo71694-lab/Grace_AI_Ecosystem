@@ -9,7 +9,7 @@ app = Flask(__name__)
 # =================================================================
 # 🔑 क्रेडेंशियल्स
 GREEN_API_ID = "7107664395"
-GREEN_API_TOKEN = "4857c575c0ff4023a7aeb6bc6ba1813a04b80438d8624857a3" # अपना ग्रीन API टोकन यहाँ डालें
+GREEN_API_TOKEN = "4857c575c0ff4023a7aeb6bc6ba1813a04b80438d8624857a3"
 GEMINI_API_KEY = "AQ.Ab8RN6I-tIfhBNJn5J60TRP_LjadX7ByjOlo3hQXiMqwIYJu1Q"
 OMKAR_SIR_NUMBER = "919569912633"
 # =================================================================
@@ -39,8 +39,10 @@ def send_whatsapp_message(to_number, text):
 @app.route('/webhook', methods=['POST'])
 def whatsapp_webhook():
     data = request.json
+    webhook_type = data.get("typeWebhook")
     
-    if data.get("typeWebhook") == "incomingMessageReceived":
+    # 🚀 सुधार: बाहर से आए (incoming) और खुद के फोन से भेजे गए (outgoing) दोनों मैसेजेस को स्वीकार करें
+    if webhook_type in ["incomingMessageReceived", "outgoingMessageReceived"]:
         try:
             sender = data["senderData"]["sender"].split("@")[0]
             message_text = data["messageData"]["textMessageData"]["textMessage"].strip()
