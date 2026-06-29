@@ -5,4 +5,4 @@ gTTS
 streamlit-mic-recorder
 requests
 google-generativeai
-supabase
+flask
